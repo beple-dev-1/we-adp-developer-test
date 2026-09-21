@@ -1,0 +1,1143 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="developer-teal">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WE-ADP for BPL Developer</title>
+<!--
+  WE-ADP Developer — 비플페이(BPL)
+
+  데이터는 이 파일에 담지 않는다. 같은 폴더의 ledger.json 을 읽는다.
+    원장 생성:  node .claude/scripts/task-ledger.cjs --group BIZ_ZEROPAY
+    계약 명세:  .claude/scripts/task-ledger.schema.json
+
+  레이아웃·타이포·컴포넌트 규격은 전사 Developer 컨셉 목업(developer-black 테마)을 따른다.
+  키컬러만 Teal 로 교체했다 — 사이드바 키컬러 변경 제안 B안.
+-->
+<link rel="stylesheet" crossorigin="anonymous"
+      integrity="sha384-GIdEBaqGN9mNkDkMkzMHW8EKUqtpPIe/sLj1X7DIrnc9uPtLROJgmuDlh+3rBw0j"
+      href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<style>
+:root {
+  /* 간격·모서리 — 컨셉 토큰 그대로 */
+  --space-1: 4px;  --space-2: 8px;  --space-3: 12px; --space-4: 16px;
+  --space-6: 24px; --space-8: 32px; --space-12: 48px;
+  --radius-control: 8px; --radius-panel: 16px;
+
+  /* 면·선·글자 — 채도 0 그레이 10단계. 키컬러 변경 제안이 정본이며 이 밖의 회색을 쓰지 않는다.
+     (컨셉 목업의 #fafafa·#dedede·#666666 은 구버전이라 따르지 않는다 — 구조만 참고한다.) */
+  --gray-900: #111111;  --gray-800: #333333;  --gray-700: #555555;
+  --gray-600: #999999;  --gray-500: #CCCCCC;  --gray-400: #D8D8D8;
+  --gray-300: #EDEDED;  --gray-200: #F7F7F7;  --gray-100: #FAFAFA;
+  --white: #FFFFFF;
+
+  --color-ink: var(--gray-900);
+  --color-body: var(--gray-800);
+  --color-canvas: var(--white);
+  --color-paper: var(--gray-200);
+  --color-workspace: var(--gray-300);
+  --color-line: var(--gray-300);
+  --color-border: var(--gray-400);
+  --color-soft: var(--gray-200);
+  --color-muted: var(--gray-600);
+
+  /* 키컬러 — Teal(제안 B안). 선택 상태·호버·강조에만 쓴다. */
+  --key: #0E9AA7;
+  --key-soft: #E7F4F5;
+  --key-line: #B6DEE1;
+  --sidebar: #0A1E22;
+  --sidebar-hover: #0B2F35;
+  --sidebar-active: #0E9AA7;
+  --sidebar-text: var(--gray-500);
+  --sidebar-title: var(--gray-600);
+  --sidebar-width: 232px;
+  --topbar-height: 56px;
+
+  /* 상태 5색 — 컨셉 목업 값 그대로 */
+  --st-waiting-bg:#f7f7f5; --st-waiting-line:#d8d7d2; --st-waiting-ink:#55544f; --st-waiting-dot:#85837d;
+  --st-progress-bg:#eef5f8; --st-progress-line:#c6dbe4; --st-progress-ink:#315d72; --st-progress-dot:#3e7894;
+  --st-review-bg:#fff7ed; --st-review-line:#edd0ad; --st-review-ink:#7c491b; --st-review-dot:#c1732f;
+  --st-done-bg:#f2f8ec; --st-done-line:#c9dcae; --st-done-ink:#426323; --st-done-dot:#6c963e;
+  --st-error-bg:#fff1f1; --st-error-line:#edbcbc; --st-error-ink:#922f2f; --st-error-dot:#c84040;
+
+  /* 간트 — 진척은 키컬러, 남은 구간·대기는 그레이, 완료·요청서는 상태 5색 계열 */
+  --schedule-active: var(--key);
+  --schedule-remaining: var(--gray-300);
+  --schedule-range: var(--gray-400);
+  --schedule-done: var(--st-done-line);
+  --schedule-done-border: var(--st-done-dot);
+  --schedule-request: var(--gray-300);
+  --schedule-request-border: var(--gray-400);
+  --schedule-today: var(--st-review-dot);
+
+  /* 간트 치수 — 컨셉 규격 그대로 */
+  --label-width: 380px;
+  --assignment-width: 174px;
+  --axis-height: 60px;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  min-width: 320px; color: var(--color-body); background: var(--color-paper);
+  font-size: 15px; line-height: 1.65;
+  font-family: "Pretendard Variable", Pretendard, "Malgun Gothic", "맑은 고딕",
+               -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+h1, h2, h3 { margin: 0; font-weight: 650; color: var(--color-ink); }
+a { color: inherit; }
+.mono { font-family: "JetBrains Mono", Consolas, "D2Coding", monospace; font-size: .8125rem; }
+.muted { color: var(--color-muted); }
+.skip-link { position: absolute; left: -9999px; }
+
+/* ── 헤더 ─────────────────────────────────────────── */
+.app-header {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 20; height: var(--topbar-height);
+  padding: 0 var(--space-4) 0 calc(var(--sidebar-width) + var(--space-4));
+  display: flex; align-items: center; gap: var(--space-2);
+  background: var(--color-canvas); border-bottom: 1px solid var(--color-line);
+}
+.app-header__brand {
+  position: fixed; left: 0; top: 0; z-index: 21;
+  width: var(--sidebar-width); height: var(--topbar-height); padding: 0 20px;
+  display: flex; align-items: center; gap: 6px;
+  background: var(--sidebar); color: #fff;
+  border-bottom: 1px solid rgb(255 255 255 / 16%);
+  font-size: .9375rem; font-weight: 700; letter-spacing: -.01em;
+}
+.app-header__version { color: rgb(255 255 255 / 62%); font-size: .6875rem; font-weight: 600; }
+.app-header__gap { flex: 1 1 auto; }
+
+/* 알림·프로필 드롭다운 */
+.pop { position: relative; }
+.pop > summary {
+  list-style: none; cursor: pointer; display: flex; align-items: center; gap: 6px;
+  height: 36px; padding: 0 12px; border-radius: var(--radius-control);
+  border: 1px solid var(--color-line); background: var(--color-canvas);
+  font-size: .8125rem; font-weight: 600; white-space: nowrap;
+}
+.pop > summary::-webkit-details-marker { display: none; }
+.pop > summary:hover, .pop[open] > summary { border-color: var(--key); color: var(--key); }
+.pop .unread {
+  min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px;
+  background: var(--key); color: #fff; font-size: .6875rem; font-weight: 700;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.pop__body {
+  position: absolute; top: calc(100% + 8px); right: 0; z-index: 40; width: 420px;
+  max-height: min(460px, calc(100vh - 100px)); overflow-y: auto;
+  border: 1px solid var(--color-line); border-radius: var(--radius-control);
+  background: var(--color-canvas); box-shadow: 0 12px 32px rgb(8 8 8 / 10%);
+}
+.notification-panel__head { padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--color-line); }
+.notification-panel__head h2 { font-size: .875rem; }
+.notification-panel__head p { margin: 2px 0 0; color: var(--color-muted); font-size: .75rem; }
+.notice { display: flex; gap: 10px; padding: 10px var(--space-4); border-bottom: 1px solid var(--color-line); text-decoration: none; }
+.notice:last-child { border-bottom: 0; }
+.notice:hover { background: var(--color-soft); }
+.notice__state { width: 6px; height: 6px; margin-top: 8px; border-radius: 50%; background: var(--key); flex: none; }
+.notice__copy { min-width: 0; flex: 1; }
+.notice__copy strong { display: block; font-size: .8125rem; font-weight: 600; line-height: 1.5; }
+.notice__copy time { color: var(--color-muted); font-size: .6875rem; }
+.account-info { margin: 0; padding: var(--space-3) var(--space-4); font-size: .8125rem; }
+
+/* ── 사이드바 ─────────────────────────────────────── */
+.app-nav {
+  position: fixed; top: var(--topbar-height); left: 0; bottom: 0; z-index: 19;
+  width: var(--sidebar-width); padding: 18px 12px; overflow-y: auto;
+  background: var(--sidebar); color: var(--sidebar-text);
+  display: flex; flex-direction: column;
+}
+.app-nav__project { position: relative; padding-bottom: 18px; margin: 0 0 12px; }
+.app-nav__project::after { content: ""; position: absolute; right: 0; bottom: 0; left: 0; border-bottom: 1px solid rgb(255 255 255 / 10%); }
+.app-nav__project-label { display: block; margin-bottom: 1px; color: var(--gray-600); font-size: .625rem; font-weight: 600; }
+.app-nav__project-trigger {
+  width: 100%; min-height: 44px; padding: 0 10px 0 12px;
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  border: 1px solid rgb(255 255 255 / 18%); border-radius: var(--radius-control);
+  color: #fff; background: transparent; cursor: pointer; list-style: none;
+}
+.app-nav__project-trigger::-webkit-details-marker { display: none; }
+.app-nav__project-combobox[open] > summary,
+.app-nav__project-trigger:hover { border-color: rgb(255 255 255 / 32%); background: rgb(255 255 255 / 7%); }
+.app-nav__project-value { display: block; font-size: .75rem; font-weight: 650; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.app-nav__project-list {
+  position: absolute; top: calc(100% + 8px); right: 0; left: 0; z-index: 40; padding: 4px;
+  border: 1px solid var(--color-line); border-radius: var(--radius-control);
+  background: var(--color-canvas); box-shadow: 0 12px 32px rgb(8 8 8 / 12%);
+}
+.app-nav__project-option { min-height: 36px; padding: 6px 8px; display: flex; align-items: center; border-radius: 6px; color: var(--color-ink); font-size: .8125rem; }
+.app-nav__project-option[aria-current="true"] { color: var(--key); font-weight: 650; }
+.app-nav__project-option[aria-disabled="true"] { color: var(--color-muted); opacity: .6; }
+
+.app-nav a.artifact-link {
+  position: relative; display: flex; gap: 10px; align-items: center; min-height: 40px;
+  margin: 2px 0; padding: 0 11px; border-radius: 6px;
+  color: var(--sidebar-text); text-decoration: none; font-size: 14px; font-weight: 500;
+}
+.app-nav a.artifact-link::before { content: ""; width: 10px; height: 10px; flex: none; border-radius: 2px; }
+.artifact-link--white::before { border: 1px solid rgb(255 255 255 / 55%); background: #fff; }
+.artifact-link--blue::before { background: #3e7894; }
+.artifact-link--green::before { background: var(--st-done-dot); }
+.app-nav a.artifact-link:hover { color: #fff; background: var(--sidebar-hover); }
+.app-nav a.artifact-link.active { color: #fff; background: var(--sidebar-active); font-weight: 650; }
+.app-nav .sect { color: var(--sidebar-title); font-size: .625rem; font-weight: 600; letter-spacing: .08em; padding: 14px 11px 4px; text-transform: uppercase; }
+.app-nav hr { height: 1px; margin: var(--space-3) 0; border: 0; background: rgb(255 255 255 / 16%); }
+.admin-nav { margin-top: auto; padding-top: var(--space-3); border-top: 1px solid rgb(255 255 255 / 10%); }
+/* Developer 내부 기능이 아니라는 표식 — 항목마다 붙인다(섹션 헤더만으로는 구분이 안 된다). */
+.admin-badge { margin-left: auto; padding: 0 6px; border-radius: 4px; border: 1px solid rgb(255 255 255 / 22%); color: var(--sidebar-title); font-size: .625rem; font-weight: 600; }
+
+/* ── 본문 ─────────────────────────────────────────── */
+/* 모든 화면이 같은 뼈대를 쓴다 — 뷰포트를 채우고, 머리글은 고정, 내용만 스크롤.
+   페이지 전체가 늘어나면 필터·머리글이 화면 밖으로 밀려 매번 위로 스크롤해야 한다. */
+.app-main {
+  margin-left: var(--sidebar-width); margin-top: var(--topbar-height);
+  height: calc(100vh - var(--topbar-height));
+  padding: var(--space-6) var(--space-6) var(--space-4);
+  display: flex; flex-direction: column; overflow: hidden;
+}
+.maxw { max-width: 1320px; width: 100%; }
+.app-main > .maxw:first-child { flex: none; }        /* 제목·설명 */
+.app-main > .maxw:last-child {                        /* 필터 + 본문 */
+  flex: 1; min-height: 0; display: flex; flex-direction: column;
+}
+.app-main > .maxw:only-child { flex: 1; }
+.app-main .filter-bar, .app-main .text-small { flex: none; }
+.page-intro { margin: var(--space-2) 0 var(--space-4); }
+
+/* 진행현황은 간트가 스스로 스크롤한다. 그 밖의 화면은 본문 영역이 스크롤한다. */
+.view-progress > .maxw:last-child { overflow: hidden; }
+.view-progress .card { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.view-progress .card__head { flex: none; }
+.view-progress .maxw { max-width: none; }
+.app-main:not(.view-progress) > .maxw:last-child { overflow-y: auto; padding-right: 2px; }
+.page-head { display: flex; align-items: start; justify-content: space-between; gap: var(--space-4); }
+.page-head__title { font-size: 32px; font-weight: 650; line-height: 1.16; letter-spacing: -.04rem; }
+.page-intro { margin: var(--space-2) 0 var(--space-6); color: var(--color-muted); font-size: 15px; }
+
+.card { border: 1px solid var(--color-line); border-radius: var(--radius-panel); background: var(--color-canvas); }
+.card__head { padding: var(--space-4) var(--space-6); border-bottom: 1px solid var(--color-line); display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap; }
+.card__body { padding: var(--space-4) var(--space-6) var(--space-6); }
+.sec { margin-bottom: var(--space-6); }
+.sec__title { font-size: 1rem; margin-bottom: var(--space-1); }
+.sec__desc { color: var(--color-muted); font-size: .8125rem; margin-bottom: var(--space-3); }
+
+/* 필터 바 */
+.filter-bar { display: flex; gap: var(--space-3); align-items: end; flex-wrap: wrap; margin-bottom: var(--space-4); }
+.field { display: grid; align-content: start; gap: 6px; min-width: 170px; }
+.field__label { font-size: .75rem; font-weight: 650; line-height: 1.4; }
+.field__control {
+  width: 100%; height: 44px; padding: 0 12px; border: 1px solid var(--color-line);
+  border-radius: var(--radius-control); background: var(--color-canvas);
+  color: var(--color-ink); font-size: .8125rem; font-family: inherit;
+}
+.field__control:hover { border-color: var(--key); }
+.field__control:focus { border-color: var(--key); outline: 0; box-shadow: 0 0 0 3px rgb(14 154 167 / 14%); }
+.button {
+  height: 44px; padding: 0 20px; border-radius: var(--radius-control); border: 1px solid var(--key);
+  background: var(--key); color: #fff; font-size: .8125rem; font-weight: 650; cursor: pointer; font-family: inherit;
+}
+.button:hover { filter: brightness(.94); }
+.button--ghost { background: var(--color-canvas); color: var(--color-ink); border-color: var(--color-line); }
+.button--ghost:hover { border-color: var(--key); color: var(--key); filter: none; }
+
+/* 상태 뱃지 */
+.status-badge {
+  display: inline-flex; align-items: center; gap: 6px; padding: 2px 10px; border-radius: 999px;
+  font-size: .75rem; font-weight: 600; white-space: nowrap;
+  background: var(--sb-bg); border: 1px solid var(--sb-line); color: var(--sb-ink);
+}
+.status-badge::before { content: ""; width: 7px; height: 7px; flex: none; border-radius: 50%; background: var(--sb-dot); }
+.status-badge--waiting  { --sb-bg:var(--st-waiting-bg);  --sb-line:var(--st-waiting-line);  --sb-ink:var(--st-waiting-ink);  --sb-dot:var(--st-waiting-dot); }
+.status-badge--progress { --sb-bg:var(--st-progress-bg); --sb-line:var(--st-progress-line); --sb-ink:var(--st-progress-ink); --sb-dot:var(--st-progress-dot); }
+.status-badge--review   { --sb-bg:var(--st-review-bg);   --sb-line:var(--st-review-line);   --sb-ink:var(--st-review-ink);   --sb-dot:var(--st-review-dot); }
+.status-badge--complete { --sb-bg:var(--st-done-bg);     --sb-line:var(--st-done-line);     --sb-ink:var(--st-done-ink);     --sb-dot:var(--st-done-dot); }
+.status-badge--error    { --sb-bg:var(--st-error-bg);    --sb-line:var(--st-error-line);    --sb-ink:var(--st-error-ink);    --sb-dot:var(--st-error-dot); }
+.status-badge--inferred { border-style: dashed; }
+.tag { display: inline-block; padding: 1px 8px; border-radius: 4px; border: 1px solid var(--color-line); background: var(--color-soft); color: var(--color-muted); font-size: .6875rem; font-weight: 600; }
+
+/* 지표 카드 */
+.metric-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: var(--space-6); }
+.metric { border: 1px solid var(--color-line); border-radius: var(--radius-panel); background: var(--color-canvas); padding: var(--space-4) var(--space-6); }
+.metric__n { font-size: 30px; font-weight: 700; line-height: 1.2; letter-spacing: -.03em; }
+.metric__k { font-size: .8125rem; color: var(--color-muted); }
+.metric__x { font-size: .75rem; color: var(--color-muted); margin-top: 6px; }
+.metric--cur { border-color: var(--key-line); background: var(--key-soft); }
+.metric--cur .metric__n { color: var(--key); }
+
+table { width: 100%; border-collapse: collapse; font-size: .8125rem; }
+th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--color-line); vertical-align: middle; }
+th { color: var(--color-muted); font-weight: 650; font-size: .75rem; white-space: nowrap; }
+td.num, th.num { text-align: right; }
+tbody tr:hover { background: var(--color-soft); }
+.empty { color: var(--color-muted); font-size: .8125rem; padding: var(--space-8); text-align: center; }
+.text-small { font-size: .8125rem; margin: 0 0 var(--space-3); }
+/* 다른 화면으로 건너가는 링크 — 키컬러는 이렇게 '누를 수 있는 것'에만 쓴다. */
+.req-link { color: var(--key); text-decoration: none; font-weight: 650; }
+.req-link:hover { text-decoration: underline; text-underline-offset: 3px; }
+/* 딥링크로 지목된 행 */
+.row-focus > td { background: var(--key-soft); box-shadow: inset 3px 0 0 var(--key); }
+.notice-box { border-left: 3px solid var(--key); background: var(--color-canvas); border: 1px solid var(--color-line); border-left-width: 3px; padding: var(--space-4) var(--space-6); border-radius: var(--radius-control); }
+.notice-box h3 { font-size: .9375rem; margin-bottom: 6px; }
+.notice-box code { background: var(--color-soft); padding: 2px 6px; border-radius: 3px; font-size: .75rem; }
+
+/* ── 간트 ─────────────────────────────────────────── */
+.progress-legend { display: flex; justify-content: flex-end; margin-left: auto; gap: 6px 16px; flex-wrap: wrap; font-size: 12px; color: var(--gray-700); }
+.progress-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.progress-legend i { width: 18px; height: 10px; border-radius: 2px; background: var(--schedule-active); }
+.progress-legend .legend-request { background: var(--schedule-request); border: 1px solid var(--schedule-request-border); }
+.progress-legend .legend-running { width: 36px; background: linear-gradient(to right, var(--schedule-active) 50%, var(--schedule-remaining) 50%); border: 1px solid var(--gray-500); }
+.progress-legend .legend-wait { background: transparent; border: 1px dashed var(--schedule-range); }
+.progress-legend .legend-done { background: var(--schedule-done); border: 1px solid var(--schedule-done-border); }
+.progress-legend .legend-date { width: 2px; height: 12px; border-radius: 0; background: var(--schedule-today); }
+
+.gantt-wrap { flex: 1; min-height: 0; overflow: auto; overscroll-behavior: contain; }
+.gantt { min-width: 1120px; }
+/* 라벨·담당 칸은 가로 스크롤에도 붙어 있게 — 트랙이 넓어져도 어느 행인지 잃지 않는다. */
+.g-label { position: sticky; left: 0; z-index: 3; }
+.g-assignment { position: sticky; left: var(--label-width); z-index: 3; }
+.g-head .g-label, .g-head .g-assignment { z-index: 6; }
+.g-row {
+  display: grid; grid-template-columns: var(--label-width) var(--assignment-width) minmax(0, 1fr);
+  align-items: stretch; min-height: 34px; border-bottom: 1px solid var(--color-line);
+}
+.g-row:last-child { border-bottom: 0; }
+.g-head { position: sticky; top: 0; z-index: 4; height: var(--axis-height); font-weight: 650; }
+.g-head > div { background: var(--gray-300); color: var(--color-muted); font-size: .75rem; }
+.g-head .g-track { padding-top: 24px; }
+.g-group { border-bottom: 1px solid var(--color-line); }
+.g-group:last-child { border-bottom: 0; }
+.g-label { padding: 7px 12px; display: flex; align-items: center; gap: .45rem; min-width: 0; font-size: 12px; background: var(--white); }
+.g-label.ind { padding-left: 28px; }
+/* TRD 는 과업보다 한 단 더 들어가고, 세로선으로 소속을 보인다. */
+.g-label.ind2 { padding-left: 52px; position: relative; color: var(--gray-700); }
+.g-label.ind2::before { content: ""; position: absolute; left: 36px; top: 0; bottom: 0; width: 1px; background: var(--gray-400); }
+.g-label.ind2::after { content: ""; position: absolute; left: 36px; top: 50%; width: 8px; height: 1px; background: var(--gray-400); }
+.g-owner { color: var(--gray-700); font-size: 11px; overflow: hidden; text-overflow: ellipsis; line-height: 1.35; }
+.g-prog { color: var(--key); font-weight: 650; font-size: 10.5px; }
+/* 당일 처리이면서 부분 진척인 것 — 마름모 절반만 채운다. */
+.g-ms--part { background: linear-gradient(to right, var(--schedule-active) 50%, var(--schedule-remaining) 50%); border: 1px solid var(--gray-400); }
+
+/* 요청서 상세 */
+.detail-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: var(--space-3); margin-bottom: var(--space-4); }
+.detail-item { border: 1px solid var(--color-line); border-radius: var(--radius-control); background: var(--color-canvas); padding: var(--space-3) var(--space-4); }
+.detail-item dt { color: var(--color-muted); font-size: .75rem; margin-bottom: 2px; }
+.detail-item dd { margin: 0; font-size: .875rem; font-weight: 600; }
+.prog-bar { height: 8px; border-radius: 4px; background: var(--gray-300); overflow: hidden; margin-top: 6px; }
+.prog-bar > span { display: block; height: 100%; background: var(--key); }
+.task-card { border: 1px solid var(--color-line); border-radius: var(--radius-control); background: var(--color-canvas); margin-bottom: var(--space-3); }
+.task-card__head { padding: var(--space-3) var(--space-4); display: flex; align-items: center; gap: var(--space-2); border-bottom: 1px solid var(--color-line); flex-wrap: wrap; }
+.task-card__body { padding: var(--space-2) var(--space-4) var(--space-3); }
+.back-link { display: inline-block; margin-bottom: var(--space-2); color: var(--key); text-decoration: none; font-size: .8125rem; font-weight: 650; }
+.back-link:hover { text-decoration: underline; text-underline-offset: 3px; }
+.trd-line { padding: 5px 0; border-bottom: 1px solid var(--color-line); font-size: .8125rem; display: flex; align-items: center; gap: 8px; }
+.trd-line:last-child { border-bottom: 0; }
+.num { font-variant-numeric: tabular-nums; }
+td .num { display: block; text-align: right; }
+.num.bad { color: var(--st-error-ink); font-weight: 700; }
+.hint { display: inline-block; margin-left: 8px; padding: 1px 8px; border-radius: 4px; background: var(--color-soft); border: 1px solid var(--color-line); font-size: .6875rem; }
+.trd-line .status-badge { margin-left: auto; }
+.g-dr .g-label, .g-dr .g-assignment { background: var(--gray-200); }
+.g-dr .g-tt { font-weight: 650; }
+.g-label .mono { font-size: 11px; flex: none; }
+.g-tt { min-width: 0; white-space: normal; overflow-wrap: anywhere; line-height: 1.45; }
+.g-assignment {
+  padding: 4px 10px; display: flex; align-items: center; justify-content: space-between; gap: 6px;
+  border-right: 1px solid var(--color-line); font-size: 11px; white-space: nowrap; background: var(--white);
+}
+.g-assignment .status-badge { font-size: 11px; padding: 2px 6px; min-height: 22px; }
+.g-due { font-size: 10px; color: var(--color-muted); }
+.g-track { position: relative; display: grid; grid-template-columns: repeat(42, 1fr); align-items: center; min-height: 34px; }
+.g-wk { grid-row: 1; height: 100%; padding: 10px 0; border-left: 1px dashed var(--color-line); display: flex; align-items: center; justify-content: center; font-size: 10px; color: var(--color-muted); }
+.g-reference-label {
+  position: absolute; top: 3px; z-index: 5; transform: translateX(-50%);
+  padding: 2px 5px; border: 1px solid var(--st-review-line); border-radius: 3px;
+  background: var(--st-review-bg); color: var(--st-review-ink); font-size: 11px; line-height: 16px; white-space: nowrap;
+}
+.g-today { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--schedule-today); z-index: 2; }
+/* 하루짜리 과업이 점으로 사라지지 않도록 최소 폭을 준다. */
+.g-bar { grid-row: 1; min-width: 14px; height: 14px; border-radius: 3px; z-index: 1; }
+.g-bar.g-range { height: 7px; }
+.g-bar--request { background: var(--schedule-request); border: 1px solid var(--schedule-request-border); }
+/* 진행 막대는 경과분/남은분을 그라데이션으로 나눈다 — 컨셉 .g-s1.run 과 같은 방식 */
+.g-bar--active { background: linear-gradient(to right, var(--schedule-active) var(--p, 100%), var(--schedule-remaining) var(--p, 100%)); border: 1px solid var(--gray-400); }
+.g-bar--done { background: var(--schedule-done); border: 1px solid var(--schedule-done-border); }
+.g-bar--wait { background: transparent; border: 1px dashed var(--schedule-range); }
+
+/* 당일 처리 마일스톤 — 기간이 없는 항목은 막대가 아니라 마름모로 그린다. */
+.g-ms { grid-row: 1; width: 11px; height: 11px; justify-self: center; transform: rotate(45deg); border-radius: 2px; z-index: 1; }
+.g-ms--active { background: var(--schedule-active); }
+.g-ms--done { background: var(--schedule-done); border: 1px solid var(--schedule-done-border); }
+.g-ms--wait { background: var(--color-canvas); border: 1px dashed var(--schedule-range); }
+.g-ms--request { background: var(--schedule-request); border: 1px solid var(--schedule-request-border); }
+.progress-legend .legend-ms { width: 11px; height: 11px; transform: rotate(45deg); background: var(--schedule-active); border-radius: 2px; }
+
+@media (max-width: 1100px) {
+  .metric-grid { grid-template-columns: repeat(2, 1fr); }
+}
+</style>
+</head>
+<body>
+
+<a class="skip-link" href="#app">본문으로 이동</a>
+
+<header class="app-header">
+  <span class="app-header__brand">WE-ADP Developer<span class="app-header__version">v1.0.0</span></span>
+  <span class="app-header__gap"></span>
+  <details class="pop pop--notifications" id="alarm">
+    <summary>최근 활동 <span class="unread" id="alarm-count">0</span></summary>
+    <div class="pop__body" id="alarm-body"></div>
+  </details>
+  <details class="pop" id="account">
+    <summary id="account-name">—</summary>
+    <div class="pop__body" style="width:260px" id="account-body"></div>
+  </details>
+</header>
+
+<nav class="app-nav" id="developer-navigation">
+  <div class="app-nav__project">
+    <details class="app-nav__project-combobox">
+      <summary class="app-nav__project-trigger">
+        <span>
+          <span class="app-nav__project-label">작업그룹</span>
+          <span class="app-nav__project-value" id="group-value">—</span>
+        </span>
+        <span aria-hidden="true">⌄</span>
+      </summary>
+      <div class="app-nav__project-list" id="group-list"></div>
+    </details>
+  </div>
+  <a class="artifact-link artifact-link--blue" href="#/dashboard" data-r="/dashboard">대시보드</a>
+  <div class="sect">개발 업무</div>
+  <a class="artifact-link artifact-link--white" href="#/inbox" data-r="/inbox">작업 수신함</a>
+  <a class="artifact-link artifact-link--white" href="#/trd" data-r="/trd">TRD</a>
+  <a class="artifact-link artifact-link--white" href="#/progress" data-r="/progress">진행현황</a>
+  <a class="artifact-link artifact-link--white" href="#/review" data-r="/review">작업 리뷰</a>
+  <div class="admin-nav">
+    <div class="sect">운영·관리 · 관리자</div>
+    <a class="artifact-link artifact-link--green" href="#/operations" data-r="/operations">운영현황<span class="admin-badge">관리자</span></a>
+    <a class="artifact-link artifact-link--green" href="#/usage" data-r="/usage">사용량분석<span class="admin-badge">관리자</span></a>
+    <a class="artifact-link artifact-link--green" href="#/security" data-r="/security">보안검토<span class="admin-badge">관리자</span></a>
+  </div>
+</nav>
+
+<div class="app-main" id="app"><div class="empty">원장을 불러오는 중…</div></div>
+
+<script>
+'use strict';
+
+var ACCEPTED_SCHEMA = ['1.0'];
+var TASK_STATUSES = ['접수', '개발중', '리뷰중', '완료'];
+var TRD_STATUSES = ['개발대기', '개발중', '개발완료'];
+var ENTRIES = ['interview', 'plan', 'direct', 'investigate', 'ops', 'harness'];
+// 운영 3종 링크 — 여기 한 곳만 고치면 된다. 베이스만 확인됐고 하위 경로는 미확정이라
+// 셋 다 베이스로 보내고 화면에 그 사실을 적는다(죽은 링크로 이동시키지 않는다).
+var ADMIN_BASE = 'https://we-adp-admin-beple.bizplay.co.kr';
+var ADMIN_LINKS = {
+  ops:      { url: ADMIN_BASE, confirmed: false },
+  usage:    { url: ADMIN_BASE, confirmed: false },
+  security: { url: ADMIN_BASE, confirmed: false },
+};
+var GANTT_WEEKS = 6;
+var GANTT_CELLS = GANTT_WEEKS * 7;   // 42열 — 컨셉과 동일
+
+var LEDGER = null;
+var FILTER = { taskStatus: '', trdStatus: '', entry: '', q: '', reqType: '', reqStatus: '', owner: '', verdict: '' };
+
+/* ── 공통 조각 ──────────────────────────────────── */
+
+/** 모든 출력 문자열은 예외 없이 이 함수를 지난다. */
+function esc(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+var TONE = {
+  '접수': 'waiting', '개발대기': 'waiting', '요청': 'waiting',
+  '개발중': 'progress', '진행': 'progress',
+  '리뷰중': 'review', 'CONDITIONAL': 'review',
+  '완료': 'complete', '개발완료': 'complete', 'PASS': 'complete',
+  'FAIL': 'error',
+};
+
+function statusBadge(text, opt) {
+  opt = opt || {};
+  var tone = TONE[text] || 'waiting';
+  return '<span class="status-badge status-badge--' + tone +
+         (opt.inferred ? ' status-badge--inferred' : '') + '"' +
+         (opt.title ? ' title="' + esc(opt.title) + '"' : '') + '>' +
+         esc(text) + (opt.inferred ? ' ?' : '') + '</span>';
+}
+
+function taskBadge(t) {
+  return statusBadge(t.status, { inferred: t.statusInferred, title: '판정 근거: ' + t.statusVia });
+}
+
+function tag(s) { return '<span class="tag">' + esc(s) + '</span>'; }
+function ymd(iso) { return String(iso || '').slice(0, 10); }
+/** 로컬 달력 기준 YYYY-MM-DD. toISOString() 은 UTC 라 KST 자정이 전날로 밀린다. */
+function localYmd(d) { return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10); }
+function emptyBox(msg) { return '<div class="empty">' + esc(msg) + '</div>'; }
+
+function pageHead(title, intro) {
+  return '<div class="maxw"><div class="page-head"><h1 class="page-head__title">' + esc(title) + '</h1></div>' +
+         '<p class="page-intro">' + esc(intro) + '</p></div>';
+}
+
+function selectField(id, label, options, value) {
+  var opts = options.map(function (o) {
+    return '<option value="' + esc(o) + '"' + (o === value ? ' selected' : '') + '>' + esc(o || '전체') + '</option>';
+  }).join('');
+  return '<div class="field"><label class="field__label" for="' + id + '">' + esc(label) + '</label>' +
+         '<select class="field__control" id="' + id + '">' + opts + '</select></div>';
+}
+
+function tableOf(headers, rows) {
+  if (!rows.length) return emptyBox('조건에 맞는 항목이 없습니다.');
+  var h = headers.map(function (x) { return '<th' + (x.num ? ' class="num"' : '') + '>' + esc(x.label) + '</th>'; }).join('');
+  var b = rows.map(function (r) {
+    return '<tr>' + r.map(function (c, i) {
+      return '<td' + (headers[i] && headers[i].num ? ' class="num"' : '') + '>' + c + '</td>';
+    }).join('') + '</tr>';
+  }).join('');
+  return '<div class="card"><table><thead><tr>' + h + '</tr></thead><tbody>' + b + '</tbody></table></div>';
+}
+
+/* ── 필터 ───────────────────────────────────────── */
+
+function filterTasks(led) {
+  var q = FILTER.q.trim().toLowerCase();
+  return led.tasks.filter(function (t) {
+    if (FILTER.taskStatus && t.status !== FILTER.taskStatus) return false;
+    if (FILTER.entry && t.entry !== FILTER.entry) return false;
+    if (FILTER.trdStatus && !t.trds.some(function (d) { return d.status === FILTER.trdStatus; })) return false;
+    if (q && (t.taskId + ' ' + t.title).toLowerCase().indexOf(q) < 0) return false;
+    return true;
+  });
+}
+
+function filterBar() {
+  return '<section class="filter-bar">' +
+    selectField('f-task', '과업 상태', [''].concat(TASK_STATUSES), FILTER.taskStatus) +
+    selectField('f-trd', 'TRD 상태', [''].concat(TRD_STATUSES), FILTER.trdStatus) +
+    selectField('f-entry', '진입 단계', [''].concat(ENTRIES), FILTER.entry) +
+    '<div class="field" style="flex:1;min-width:220px"><label class="field__label" for="f-q">과업번호·제목 검색</label>' +
+    '<input class="field__control" id="f-q" value="' + esc(FILTER.q) + '" placeholder="예: ZERO-PAY 또는 바코드"></div>' +
+    '<button class="button" id="f-go">검색</button>' +
+    '<button class="button button--ghost" id="f-reset">초기화</button>' +
+    '</section>';
+}
+
+function bindFilter() {
+  var set = function (k, el) { if (el) el.addEventListener('change', function () { FILTER[k] = el.value; render(); }); };
+  set('taskStatus', document.getElementById('f-task'));
+  set('trdStatus', document.getElementById('f-trd'));
+  set('entry', document.getElementById('f-entry'));
+  set('reqType', document.getElementById('f-rtype'));
+  set('reqStatus', document.getElementById('f-rstatus'));
+  set('owner', document.getElementById('f-owner'));
+  set('verdict', document.getElementById('f-verdict'));
+  var q = document.getElementById('f-q'), go = document.getElementById('f-go');
+  if (go) go.addEventListener('click', function () { FILTER.q = q ? q.value : ''; render(); });
+  if (q) q.addEventListener('keydown', function (e) { if (e.key === 'Enter') { FILTER.q = q.value; render(); } });
+  var rs = document.getElementById('f-reset');
+  if (rs) rs.addEventListener('click', function () { FILTER = { taskStatus: '', trdStatus: '', entry: '', q: '', reqType: '', reqStatus: '', owner: '', verdict: '' }; render(); });
+}
+
+/* ── 대시보드 ───────────────────────────────────── */
+
+function renderDashboard(led) {
+  var tasks = filterTasks(led);
+  var counts = {}, inferred = 0;
+  TASK_STATUSES.forEach(function (s) { counts[s] = 0; });
+  tasks.forEach(function (t) { counts[t.status]++; if (t.statusInferred) inferred++; });
+
+  var cards = TASK_STATUSES.map(function (s) {
+    var x = (s === '완료' && inferred) ? '<div class="metric__x">그중 추정 ' + inferred + '</div>' : '';
+    return '<div class="metric' + (s === '완료' ? ' metric--cur' : '') + '">' +
+           '<div class="metric__n">' + counts[s] + '</div><div class="metric__k">' + esc(s) + '</div>' + x + '</div>';
+  }).join('');
+
+  // 접수 추이 (최근 14일)
+  var byDay = {}, days = [], now = new Date();
+  for (var i = 13; i >= 0; i--) {
+    var d = new Date(now.getTime() - i * 86400000).toISOString().slice(0, 10);
+    days.push(d); byDay[d] = 0;
+  }
+  tasks.forEach(function (t) { var d = ymd(t.createdAt); if (d in byDay) byDay[d]++; });
+  var max = Math.max.apply(null, days.map(function (d) { return byDay[d]; }).concat([1]));
+  var bars = days.map(function (d) {
+    var n = byDay[d];
+    return '<div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:4px">' +
+      '<span style="font-size:.625rem;color:var(--color-muted)">' + (n || '') + '</span>' +
+      '<div style="width:100%;height:' + Math.max(Math.round((n / max) * 76), 2) + 'px;border-radius:3px 3px 0 0;background:' +
+      (n ? 'var(--key)' : 'var(--color-line)') + '"></div>' +
+      '<span style="font-size:.5625rem;color:var(--color-muted)">' + esc(d.slice(5)) + '</span></div>';
+  }).join('');
+
+  // 담당자별
+  var byOwner = {};
+  tasks.forEach(function (t) {
+    var o = t.owner || '(미상)';
+    if (!byOwner[o]) { byOwner[o] = {}; TASK_STATUSES.forEach(function (s) { byOwner[o][s] = 0; }); }
+    byOwner[o][t.status]++;
+  });
+  var rows = Object.keys(byOwner).sort().map(function (o) {
+    return [esc(o)].concat(TASK_STATUSES.map(function (s) { return String(byOwner[o][s]); }));
+  });
+
+  return pageHead('대시보드', '그룹 전체의 과업 상태와 접수 추이를 확인합니다. 상태는 산출물 파일의 실재에서 유도합니다.') +
+    '<div class="maxw">' + filterBar() +
+    '<div class="metric-grid">' + cards + '</div>' +
+    '<div class="sec"><h2 class="sec__title">접수 추이</h2><div class="sec__desc">최근 14일 · 과업 채번일 기준</div>' +
+    '<div class="card"><div class="card__body"><div style="display:flex;align-items:flex-end;gap:4px;height:120px">' + bars + '</div></div></div></div>' +
+    '<div class="sec"><h2 class="sec__title">담당자별 현황</h2><div class="sec__desc">담당자는 원장 생성자입니다 — 과업 수행자가 아닙니다</div>' +
+    tableOf([{ label: '원장 생성자' }].concat(TASK_STATUSES.map(function (s) { return { label: s, num: true }; })), rows) +
+    '</div></div>';
+}
+
+/* ── 진행현황 (간트) ────────────────────────────── */
+
+/**
+ * 타임라인 범위를 데이터에서 잡는다.
+ * 고정 6주로 두면 하네스 과업(대부분 당일 종료)이 42칸 중 1칸이 되어 막대가 점으로 보이고,
+ * 미래 일정이 없어 오른쪽 절반이 비어버린다. 실제 데이터 폭 + 오늘을 감싸는 최소 주수로 맞춘다.
+ */
+function ganttRange(tasks) {
+  var today = new Date(); today.setHours(0, 0, 0, 0);
+  var todayYmd = localYmd(today);
+  var min = today.getTime(), max = today.getTime();
+  tasks.forEach(function (t) {
+    [t.createdAt, t.updatedAt].forEach(function (s) {
+      var d = Date.parse(String(s).slice(0, 10));
+      if (!isNaN(d)) { if (d < min) min = d; if (d > max) max = d; }
+    });
+  });
+  // 주 경계(일요일)로 스냅하고 앞뒤 여백 한 주씩
+  var startDate = new Date(min - 7 * 86400000);
+  startDate.setHours(0, 0, 0, 0);
+  startDate = new Date(startDate.getTime() - startDate.getDay() * 86400000);
+  var weeks = Math.ceil((max + 7 * 86400000 - startDate.getTime()) / (7 * 86400000));
+  weeks = Math.max(3, Math.min(weeks, 14));
+  return { start: startDate, days: weeks * 7, weeks: weeks, today: today, todayYmd: todayYmd };
+}
+
+function cellOf(range, iso) {
+  var d = new Date(String(iso).slice(0, 10) + 'T00:00:00Z');
+  if (isNaN(d)) return null;
+  var n = Math.floor((d - range.start) / 86400000);
+  return n;
+}
+
+/**
+ * 진척률. 시간 경과가 아니라 **구성물의 완료 비율**이다.
+ * 실측상 과업 21건 중 18건이 당일 종료라 시간 기반 진척은 화면에 나타나지 않는다.
+ *  - 요청서 → 연결 과업 중 완료 비율
+ *  - 과업   → TRD 중 개발완료 비율. TRD 가 없으면 과업 상태로 0/100
+ */
+function progressOf(kind, node, byId) {
+  if (kind === 'request') {
+    var ks = (node.linkedTaskIds || []).map(function (id) { return byId[id]; }).filter(Boolean);
+    var d = ks.filter(function (t) { return t.status === '완료'; }).length;
+    return { done: d, total: ks.length, pct: ks.length ? Math.round((d / ks.length) * 100) : 0 };
+  }
+  if (node.trds && node.trds.length) {
+    var dn = node.trds.filter(function (x) { return x.status === '개발완료'; }).length;
+    return { done: dn, total: node.trds.length, pct: Math.round((dn / node.trds.length) * 100) };
+  }
+  var p = node.status === '완료' ? 100 : (node.status === '리뷰중' ? 100 : 0);
+  return { done: p === 100 ? 1 : 0, total: 1, pct: p };
+}
+
+function barFor(range, fromIso, toIso, kind, pct) {
+  var a = cellOf(range, fromIso), b = cellOf(range, toIso);
+  if (a === null) return '';
+  if (b === null || b < a) b = a;
+  var s = Math.max(0, Math.min(a, range.days - 1));
+  var e = Math.max(0, Math.min(b, range.days - 1));
+
+  var style = 'grid-column:' + (s + 1) + ' / ' + (e + 2);
+
+  // 기간이 하루면 막대가 점이 된다 — 하네스 과업 다수가 당일 종료다.
+  // 간트 관례대로 마일스톤(마름모)으로 그려 "기간 없음"을 형태로 알린다.
+  if (e === s) {
+    var half = (kind === 'active' && pct != null && pct > 0 && pct < 100) ? ' g-ms--part' : '';
+    return '<span class="g-ms g-ms--' + kind + half + '" style="' + style +
+           '" title="당일 처리' + (pct == null ? '' : ' · 진척 ' + pct + '%') + '"></span>';
+  }
+
+  // 진행 막대는 구성물 완료 비율을 채운다 (컨셉 .g-s1.run 의 --p 와 같은 자리).
+  if (kind === 'active') style += ';--p:' + (pct == null ? 0 : pct) + '%';
+  if (a < 0) style += ';border-top-left-radius:0;border-bottom-left-radius:0';
+  return '<span class="g-bar g-bar--' + kind + '" style="' + style + '"></span>';
+}
+
+function trackHead(range, withRef) {
+  var cells = '';
+  for (var w = 0; w < range.weeks; w++) {
+    var d = new Date(range.start.getTime() + w * 7 * 86400000);
+    cells += '<span class="g-wk" style="grid-column:' + (w * 7 + 1) + ' / ' + (w * 7 + 8) + '">' +
+             esc(localYmd(d)) + '</span>';
+  }
+  if (withRef) {
+    var n = cellOf(range, range.todayYmd);
+    var left = (n === null) ? 50 : ((n + 0.5) / range.days * 100);
+    cells += '<span class="g-reference-label" style="left:' + left.toFixed(2) + '%">' +
+             esc(range.todayYmd) + ' 기준</span>';
+  }
+  return cells;
+}
+
+/** 데이터 행의 주 구분선. 머리글과 달리 날짜 텍스트를 넣지 않는다. */
+function gridLines(range) {
+  var c = '';
+  for (var w = 0; w < range.weeks; w++) {
+    c += '<span class="g-wk" style="grid-column:' + (w * 7 + 1) + ' / ' + (w * 7 + 8) + '"></span>';
+  }
+  return c;
+}
+
+function todayMark(range) {
+  var n = cellOf(range, range.todayYmd);
+  if (n === null || n < 0 || n >= range.days) return '';
+  return '<span class="g-today" style="left:calc(' + ((n + 0.5) / range.days * 100).toFixed(2) + '% - 1px)" title="오늘"></span>';
+}
+
+function renderProgress(led) {
+  var tasks = filterTasks(led);
+  var range = ganttRange(tasks);
+  var byId = {}; led.tasks.forEach(function (t) { byId[t.taskId] = t; });
+  var shown = {}; tasks.forEach(function (t) { shown[t.taskId] = true; });
+
+  var head = '<div class="g-row g-head">' +
+    '<div class="g-label">작업요청서 / 과업 · TRD</div>' +
+    '<div class="g-assignment">담당 / 상태</div>' +
+    '<div class="g-track" style="grid-template-columns:repeat(' + range.days + ',1fr)">' + trackHead(range, true) + '</div></div>';
+
+  function taskRows(t, indent) {
+    var kind = t.status === '완료' ? 'done' : (t.status === '접수' ? 'wait' : 'active');
+    var pr = progressOf('task', t, byId);
+    var prTxt = t.trds.length ? 'TRD ' + pr.done + '/' + pr.total : 'TRD 없음 (단일 작업)';
+    var rows = '<div class="g-row">' +
+      '<div class="g-label' + (indent ? ' ind' : '') + '"><span class="mono muted">' + esc(t.taskId) + '</span>' +
+      '<span class="g-tt">' + esc(t.title) + '</span><small>' + esc(t.domainCode) + '</small></div>' +
+      '<div class="g-assignment"><span class="g-owner">' + esc(t.owner || '미배정') +
+      (prTxt ? '<br><span class="g-prog">' + esc(prTxt) + '</span>' : '') + '</span>' + taskBadge(t) + '</div>' +
+      '<div class="g-track" style="grid-template-columns:repeat(' + range.days + ',1fr)">' + gridLines(range) + todayMark(range) +
+      barFor(range, t.createdAt, t.updatedAt, kind, pr.pct) + '</div></div>';
+    t.trds.forEach(function (d) {
+      var dk = d.status === '개발완료' ? 'done' : (d.status === '개발대기' ? 'wait' : 'active');
+      rows += '<div class="g-row">' +
+        '<div class="g-label ind2"><span class="mono muted">#' + esc(d.seq) + '</span>' +
+        '<span class="g-tt">' + esc(d.title) + '</span></div>' +
+        '<div class="g-assignment">' + statusBadge(d.status, { title: '상태 출처: ' + d.statusVia }) + '</div>' +
+        '<div class="g-track" style="grid-template-columns:repeat(' + range.days + ',1fr)">' + gridLines(range) + todayMark(range) +
+        barFor(range, t.createdAt, t.updatedAt, dk, d.status === '개발완료' ? 100 : (d.status === '개발중' ? 50 : 0)) + '</div></div>';
+    });
+    return rows;
+  }
+
+  var groups = '';
+  var linked = {};
+  led.requests.forEach(function (r) {
+    var kids = r.linkedTaskIds.filter(function (id) { linked[id] = true; return shown[id]; });
+    var rp = progressOf('request', r, byId);
+    if (!kids.length && (FILTER.taskStatus || FILTER.entry || FILTER.trdStatus || FILTER.q)) return;
+    groups += '<section class="g-group"><div class="g-row g-dr">' +
+      '<div class="g-label">' + tag(r.type) +
+      '<a class="req-link mono" href="#/inbox?req=' + encodeURIComponent(r.requestId) + '" title="작업 수신함에서 보기">' +
+      esc(r.requestId) + '</a>' +
+      '<span class="g-tt">' + esc(r.title) + '</span></div>' +
+      '<div class="g-assignment"><span class="g-owner">' +
+      (rp.total ? '과업 ' + rp.done + '/' + rp.total : '연결 없음') + '</span>' + statusBadge(r.status) + '</div>' +
+      '<div class="g-track" style="grid-template-columns:repeat(' + range.days + ',1fr)">' + gridLines(range) + todayMark(range) +
+      barFor(range, r.receivedAt, r.receivedAt, rp.total && rp.pct > 0 ? 'active' : 'request', rp.pct) + '</div></div>' +
+      kids.map(function (id) { return taskRows(byId[id], true); }).join('') +
+      '</section>';
+  });
+
+  var orphans = tasks.filter(function (t) { return !linked[t.taskId]; });
+  if (orphans.length) {
+    groups += '<section class="g-group"><div class="g-row g-dr">' +
+      '<div class="g-label"><span class="g-tt">요청서 미연결 과업</span><small>' + orphans.length + '건</small></div>' +
+      '<div class="g-assignment"></div><div class="g-track">' + gridLines(range) + todayMark(range) + '</div></div>' +
+      orphans.map(function (t) { return taskRows(t, true); }).join('') + '</section>';
+  }
+
+  var legend = '<div class="progress-legend">' +
+    '<span><i class="legend-request"></i>요청서</span>' +
+    '<span><i class="legend-running"></i>진행</span>' +
+    '<span><i class="legend-wait"></i>대기</span>' +
+    '<span><i class="legend-done"></i>완료</span>' +
+    '<span><i class="legend-ms"></i>당일</span>' +
+    '<span><i class="legend-date"></i>오늘</span>' +
+    '<span class="muted">막대는 채번일~최종변경일입니다 — 하네스 과업에 마감일이 없어 계획선은 표시하지 않습니다.</span></div>';
+
+  return pageHead('진행현황', '작업요청서별 과업·TRD 의 진행 구간과 담당·상태를 확인합니다.') +
+    '<div class="maxw">' + filterBar() +
+    '<div class="card"><div class="card__head">' + legend + '</div>' +
+    '<div class="gantt-wrap"><div class="gantt">' + head +
+    (groups || '<div class="g-row"><div class="g-label">' + emptyBox('조건에 맞는 항목이 없습니다.') + '</div><div class="g-assignment"></div><div class="g-track"></div></div>') +
+    '</div></div></div></div>';
+}
+
+/* ── 자리표시 · 관리자 ──────────────────────────── */
+
+/* ── 작업 수신함 ────────────────────────────────── */
+
+function renderInbox(led, params) {
+  var focus = (params && params.req) || '';
+  var q = FILTER.q.trim().toLowerCase();
+  var byId = {}; led.tasks.forEach(function (t) { byId[t.taskId] = t; });
+
+  var rows = led.requests.filter(function (r) {
+    if (FILTER.reqType && r.type !== FILTER.reqType) return false;
+    if (FILTER.reqStatus && r.status !== FILTER.reqStatus) return false;
+    if (q && (r.requestId + ' ' + r.title).toLowerCase().indexOf(q) < 0) return false;
+    return true;
+  }).map(function (r) {
+    var kids = r.linkedTaskIds.map(function (id) { return byId[id]; }).filter(Boolean);
+    var done = kids.filter(function (t) { return t.status === '완료'; }).length;
+    return [
+      '<a class="req-link mono" href="#/progress" title="진행현황에서 보기">' + esc(r.requestId) + '</a>',
+      '<a class="req-link" href="#/request?id=' + encodeURIComponent(r.requestId) + '">' + esc(r.title) + '</a>',
+      tag(r.type),
+      statusBadge(r.status),
+      kids.length
+        ? '완료 ' + done + ' / ' + kids.length + '<div class="muted" style="font-size:.6875rem">' +
+          kids.map(function (t) { return esc(t.taskId); }).join('<br>') + '</div>'
+        : '<span class="muted">연결 없음</span>',
+      '<span class="muted">' + esc(ymd(r.receivedAt)) + '</span>',
+      '<span class="muted">' + esc(r.source) + '</span>',
+    ];
+  });
+
+  // 딥링크 대상 행에 표식을 단다.
+  var trs = rows.map(function (cells, i) {
+    var r = led.requests[i];
+    return { cells: cells, id: r ? r.requestId : '' };
+  });
+
+  var head = ['작업요청서', '업무명', '원천 유형', '진행 상태', '개발 작업', '수신일', '수신 경로'];
+  var table = trs.length
+    ? '<div class="card"><table><thead><tr>' +
+      head.map(function (h) { return '<th>' + esc(h) + '</th>'; }).join('') +
+      '</tr></thead><tbody>' +
+      trs.map(function (t) {
+        var on = (t.id && t.id === focus) ? ' class="row-focus"' : '';
+        return '<tr id="req-' + esc(t.id) + '"' + on + '>' +
+               t.cells.map(function (c) { return '<td>' + c + '</td>'; }).join('') + '</tr>';
+      }).join('') + '</tbody></table></div>'
+    : emptyBox(led.requests.length ? '조건에 맞는 요청서가 없습니다.'
+        : '수신된 개발요청서가 없습니다. Builder 수신 경로가 정해지면 어댑터를 배선합니다.');
+
+  var trdN = led.tasks.reduce(function (n, t) { return n + t.trds.length; }, 0);
+
+  return pageHead('작업 수신함', 'Builder 에서 받은 작업요청서를 확인합니다. 요청 하나는 FRD 또는 SRT 한 건입니다.') +
+    '<div class="maxw">' +
+    '<section class="filter-bar">' +
+    selectField('f-rtype', '원천 유형', ['', 'FRD', 'SRT'], FILTER.reqType) +
+    selectField('f-rstatus', '진행 상태', ['', '요청', '접수', '진행', '완료'], FILTER.reqStatus) +
+    '<div class="field" style="flex:1;min-width:220px"><label class="field__label" for="f-q">작업요청서 검색</label>' +
+    '<input class="field__control" id="f-q" value="' + esc(FILTER.q) + '" placeholder="예: REQ-BPL 또는 바코드"></div>' +
+    '<button class="button" id="f-go">검색</button>' +
+    '<button class="button button--ghost" id="f-reset">초기화</button>' +
+    '</section>' +
+    '<p class="text-small muted">작업요청서 ' + led.requests.length + '건 · 연결 과업 ' +
+    led.tasks.filter(function (t) { return t.requestIds.length; }).length + '건 · TRD ' + trdN + '건</p>' +
+    table + '</div>';
+}
+
+/* ── 요청서 상세 ────────────────────────────────── */
+
+function renderRequest(led, params) {
+  var id = (params && params.id) || '';
+  var r = led.requests.filter(function (x) { return x.requestId === id; })[0];
+  if (!r) {
+    return pageHead('작업요청서', '') +
+      '<div class="maxw"><a class="back-link" href="#/inbox">← 작업 수신함</a>' +
+      emptyBox('요청서 ' + id + ' 를 찾을 수 없습니다.') + '</div>';
+  }
+  var byId = {}; led.tasks.forEach(function (t) { byId[t.taskId] = t; });
+  var kids = r.linkedTaskIds.map(function (x) { return byId[x]; }).filter(Boolean);
+  var pr = progressOf('request', r, byId);
+  var trdAll = kids.reduce(function (n, t) { return n + t.trds.length; }, 0);
+  var trdDone = kids.reduce(function (n, t) {
+    return n + t.trds.filter(function (d) { return d.status === '개발완료'; }).length;
+  }, 0);
+
+  var meta = '<div class="detail-grid">' +
+    [['원천 유형', tag(r.type)],
+     ['진행 상태', statusBadge(r.status)],
+     ['수신일', esc(ymd(r.receivedAt))],
+     ['수신 경로', esc(r.source)],
+     ['연결 과업', pr.total ? pr.done + ' / ' + pr.total + ' 완료' : '없음'],
+     ['TRD', trdAll ? trdDone + ' / ' + trdAll + ' 개발완료' : '없음']
+    ].map(function (p) {
+      return '<dl class="detail-item"><dt>' + esc(p[0]) + '</dt><dd>' + p[1] + '</dd></dl>';
+    }).join('') + '</div>';
+
+  var prog = '<div class="card" style="padding:var(--space-4) var(--space-6);margin-bottom:var(--space-4)">' +
+    '<div style="display:flex;justify-content:space-between;font-size:.8125rem">' +
+    '<strong>진척</strong><span class="muted">과업 완료 기준 ' + pr.pct + '%</span></div>' +
+    '<div class="prog-bar"><span style="width:' + pr.pct + '%"></span></div></div>';
+
+  var body = kids.length ? kids.map(function (t) {
+    var tp = progressOf('task', t, byId);
+    return '<div class="task-card"><div class="task-card__head">' +
+      '<span class="mono muted">' + esc(t.taskId) + '</span>' +
+      '<strong style="flex:1;min-width:0">' + esc(t.title) + '</strong>' +
+      tag(t.entry) + tag(t.domainCode) + taskBadge(t) +
+      (t.trds.length ? '<span class="g-prog">TRD ' + tp.done + '/' + tp.total + '</span>' : '') +
+      '</div>' +
+      (t.trds.length
+        ? '<div class="task-card__body">' + t.trds.map(function (d) {
+            return '<div class="trd-line"><span class="mono muted">#' + esc(d.seq) + '</span> ' +
+              esc(d.title) + ' ' + statusBadge(d.status, { title: '상태 출처: ' + d.statusVia }) + '</div>';
+          }).join('') + '</div>'
+        : '<div class="task-card__body muted" style="font-size:.8125rem">TRD 없음 (단일 작업)</div>') +
+      (t.review ? '<div class="task-card__body" style="border-top:1px solid var(--color-line)">' +
+        '<span class="muted" style="font-size:.8125rem">리뷰 </span>' + statusBadge(t.review.verdict) +
+        '<span class="muted" style="font-size:.75rem"> · CRITICAL ' + t.review.critical +
+        ' · WARNING ' + t.review.warning + ' · 대상 ' + t.review.fileCount + '파일</span></div>' : '');
+  }).join('') : emptyBox('이 요청서에 연결된 과업이 아직 없습니다.');
+
+  return pageHead(r.title, '작업요청서 ' + r.requestId + ' 의 상세와 연결된 과업·TRD 입니다.') +
+    '<div class="maxw"><a class="back-link" href="#/inbox?req=' + encodeURIComponent(r.requestId) + '">← 작업 수신함</a>' +
+    meta + prog + body + '</div>';
+}
+
+/* ── TRD ────────────────────────────────────────── */
+
+function renderTrd(led) {
+  var q = FILTER.q.trim().toLowerCase();
+  var rows = [];
+  led.tasks.forEach(function (t) {
+    t.trds.forEach(function (d) {
+      if (FILTER.trdStatus && d.status !== FILTER.trdStatus) return;
+      if (FILTER.owner && (t.owner || '') !== FILTER.owner) return;
+      if (q && (t.taskId + ' ' + d.title + ' ' + t.title).toLowerCase().indexOf(q) < 0) return;
+      rows.push([
+        '<span class="mono muted">' + esc(d.trdId) + '</span>',
+        '<a class="req-link mono" href="#/progress" title="진행현황에서 보기">' + esc(t.taskId) + '</a>' +
+        '<div class="muted" style="font-size:.6875rem">' + esc(t.title) + '</div>',
+        '<span class="num">' + esc(d.seq) + '</span>',
+        esc(d.title),
+        statusBadge(d.status, { title: '상태 출처: ' + d.statusVia }),
+        '<span class="muted">' + esc(t.owner || '미배정') + '</span>',
+      ]);
+    });
+  });
+
+  var owners = {};
+  led.tasks.forEach(function (t) { if (t.owner) owners[t.owner] = 1; });
+
+  var total = led.tasks.reduce(function (n, t) { return n + t.trds.length; }, 0);
+  var withTrd = led.tasks.filter(function (t) { return t.trds.length; }).length;
+
+  return pageHead('TRD', '과업을 구성하는 개발 작업 문서입니다. FRD 를 시스템 관점에서 보완해 AI 에 개발을 지시합니다.') +
+    '<div class="maxw">' +
+    '<section class="filter-bar">' +
+    selectField('f-trd', 'TRD 상태', [''].concat(TRD_STATUSES), FILTER.trdStatus) +
+    selectField('f-owner', '담당', [''].concat(Object.keys(owners).sort()), FILTER.owner) +
+    '<div class="field" style="flex:1;min-width:220px"><label class="field__label" for="f-q">과업번호·제목 검색</label>' +
+    '<input class="field__control" id="f-q" value="' + esc(FILTER.q) + '" placeholder="예: ZERO-PAY 또는 체크디지트"></div>' +
+    '<button class="button" id="f-go">검색</button>' +
+    '<button class="button button--ghost" id="f-reset">초기화</button>' +
+    '</section>' +
+    '<p class="text-small muted">TRD ' + total + '건 · 보유 과업 ' + withTrd + '건 / 전체 ' + led.tasks.length + '건' +
+    ' <span class="hint">상태는 과업 상태에서 유도합니다 — 페이즈 문서에 기계가 읽을 완료 표시가 없어 한 과업의 TRD 가 같은 상태로 보입니다.</span></p>' +
+    tableOf([{ label: 'TRD ID' }, { label: '과업' }, { label: '순번', num: true }, { label: '제목' },
+             { label: '상태' }, { label: '담당' }], rows) +
+    '</div>';
+}
+
+/* ── 작업 리뷰 (조회 전용) ──────────────────────── */
+
+function renderReview(led) {
+  var q = FILTER.q.trim().toLowerCase();
+  var rows = led.tasks.filter(function (t) {
+    if (!t.review) return false;
+    if (FILTER.verdict && t.review.verdict !== FILTER.verdict) return false;
+    if (q && (t.taskId + ' ' + t.title).toLowerCase().indexOf(q) < 0) return false;
+    return true;
+  }).map(function (t) {
+    var r = t.review;
+    return [
+      '<a class="req-link mono" href="#/progress">' + esc(t.taskId) + '</a>' +
+      '<div class="muted" style="font-size:.6875rem">' + esc(t.title) + '</div>',
+      statusBadge(r.verdict),
+      '<span class="num' + (r.critical ? ' bad' : '') + '">' + esc(r.critical) + '</span>',
+      '<span class="num">' + esc(r.warning) + '</span>',
+      '<span class="muted">' + esc(ymd(r.reviewedAt)) + '</span>',
+      '<span class="num muted">' + esc(r.fileCount) + '</span>',
+    ];
+  });
+
+  var all = led.tasks.filter(function (t) { return t.review; });
+  var crit = all.filter(function (t) { return t.review.critical > 0; }).length;
+
+  return pageHead('작업 리뷰', '커밋 전 코드리뷰 판정을 확인합니다. 조회 전용이며 리뷰 실행은 /code-review 가 담당합니다.') +
+    '<div class="maxw">' +
+    '<section class="filter-bar">' +
+    selectField('f-verdict', '판정', ['', 'PASS', 'FAIL', 'CONDITIONAL'], FILTER.verdict) +
+    '<div class="field" style="flex:1;min-width:220px"><label class="field__label" for="f-q">과업번호·제목 검색</label>' +
+    '<input class="field__control" id="f-q" value="' + esc(FILTER.q) + '" placeholder="예: ZERO-PAY"></div>' +
+    '<button class="button" id="f-go">검색</button>' +
+    '<button class="button button--ghost" id="f-reset">초기화</button>' +
+    '</section>' +
+    '<p class="text-small muted">판정 ' + all.length + '건 / 과업 ' + led.tasks.length + '건' +
+    (crit ? ' · CRITICAL 보유 ' + crit + '건' : ' · CRITICAL 0건') +
+    ' <span class="hint">대상 파일 경로는 원장에 담지 않습니다 — 건수만 표시합니다.</span></p>' +
+    tableOf([{ label: '과업' }, { label: '판정' }, { label: 'CRITICAL', num: true },
+             { label: 'WARNING', num: true }, { label: '판정일' }, { label: '대상 파일', num: true }], rows) +
+    '</div>';
+}
+
+function adminLink(name, key) {
+  var link = ADMIN_LINKS[key] || { url: ADMIN_BASE, confirmed: false };
+  var url = link.url;
+  return pageHead(name, '관리자 전용 — WE-ADP Admin 이 담당합니다.') +
+    '<div class="maxw"><div class="notice-box"><h3>Admin 으로 연결됩니다</h3>' +
+    '<div class="muted">Developer 와 Admin 은 별도 단위 시스템입니다. 같은 기능을 여기에 복제하지 않습니다.</div>' +
+    '<div style="margin-top:12px"><a class="button" style="display:inline-flex;align-items:center;text-decoration:none" href="' +
+    esc(url) + '" target="_blank" rel="noopener noreferrer">' + esc(name) + ' 열기 ↗</a></div>' +
+    '<div class="muted" style="margin-top:8px;font-size:.75rem">' + esc(url) +
+    (link.confirmed ? '' : ' — 하위 경로가 아직 확정되지 않아 Admin 첫 화면으로 이동합니다') +
+    '</div></div></div>';
+}
+
+/* ── 헤더 · 사이드바 ────────────────────────────── */
+
+function renderChrome(led) {
+  document.getElementById('group-value').textContent = led.meta.group;
+  document.getElementById('group-list').innerHTML =
+    '<div class="app-nav__project-option" aria-current="true">' + esc(led.meta.group) + ' — ' + esc(led.meta.groupLabel) + '</div>' +
+    '<div class="app-nav__project-option" aria-disabled="true">다른 그룹 — 원장 재생성 필요</div>';
+
+  var recent = led.tasks.slice().sort(function (a, b) {
+    return String(b.updatedAt).localeCompare(String(a.updatedAt));
+  }).slice(0, 12);
+  document.getElementById('alarm-count').textContent = recent.length;
+  document.getElementById('alarm-body').innerHTML =
+    '<header class="notification-panel__head"><h2>최근 활동</h2>' +
+    '<p>최근 변경 ' + recent.length + '건 · 상태 전이 이력이 아니라 파일 최종 변경 기준입니다</p></header>' +
+    recent.map(function (t) {
+      return '<a class="notice" href="#/progress"><span class="notice__state"></span><span class="notice__copy">' +
+        '<strong>' + esc(t.taskId) + ' ' + esc(t.title) + '</strong>' +
+        '<time>' + esc(ymd(t.updatedAt)) + ' · ' + esc(t.status) + '</time></span></a>';
+    }).join('');
+
+  var who = led.meta.generatedBy || '(미상)';
+  document.getElementById('account-name').textContent = who;
+  document.getElementById('account-body').innerHTML =
+    '<p class="account-info"><strong>' + esc(who) + '</strong><br>' +
+    '<span class="muted">원장 생성자 · ' + esc(led.meta.groupLabel) + '</span><br>' +
+    '<span class="muted" style="font-size:.75rem">생성 ' + esc(led.meta.generatedAt.replace('T', ' ').slice(0, 16)) +
+    ' · 무변경 기준 ' + esc(led.meta.staleDays) + '일</span></p>';
+}
+
+/* ── 로딩 · 라우팅 ──────────────────────────────── */
+
+function noticeBox(title, lines) {
+  return '<div class="maxw"><div class="notice-box"><h3>' + esc(title) + '</h3>' +
+         lines.map(function (l) { return '<div>' + l + '</div>'; }).join('') + '</div></div>';
+}
+
+function loadLedger() {
+  return fetch('ledger.json', { cache: 'no-store' })
+    .then(function (res) {
+      if (res.status === 404) throw { kind: 'missing' };
+      if (!res.ok) throw { kind: 'http', status: res.status };
+      return res.text();
+    })
+    .then(function (txt) {
+      try { return JSON.parse(txt); } catch (e) { throw { kind: 'parse', detail: e.message }; }
+    })
+    .catch(function (e) {
+      if (e && e.kind) throw e;
+      throw { kind: 'fetch', detail: String((e && e.message) || e) };
+    });
+}
+
+function loadError(e) {
+  var cmd = '<code>node .claude/scripts/task-ledger.cjs --group BIZ_ZEROPAY</code>';
+  if (e.kind === 'missing') return noticeBox('원장이 없습니다', ['먼저 원장을 만드세요 — ' + cmd]);
+  if (e.kind === 'parse') return noticeBox('원장이 손상됐습니다', ['JSON 을 읽지 못했습니다: ' + esc(e.detail), '재생성하세요 — ' + cmd]);
+  if (e.kind === 'http') return noticeBox('원장을 읽지 못했습니다', ['HTTP ' + esc(e.status)]);
+  return noticeBox('로컬 서버로 열어야 합니다', [
+    '브라우저가 <code>file://</code> 에서 <code>fetch</code> 를 막았습니다 (CORS).',
+    '이 폴더에서 아래를 실행한 뒤 <code>http://localhost:8080/developer.html</code> 로 여세요.',
+    '<code>python -m http.server 8080</code>',
+    '<div class="muted" style="margin-top:6px">원인: ' + esc(e.detail || '') + '</div>',
+  ]);
+}
+
+function checkVersion(meta) { return ACCEPTED_SCHEMA.indexOf(String(meta && meta.schemaVersion)) >= 0; }
+
+var ROUTES = {
+  '/dashboard': renderDashboard,
+  '/progress': renderProgress,
+  '/inbox': renderInbox,
+  '/request': renderRequest,
+  '/trd': renderTrd,
+  '/review': renderReview,
+  '/operations': function () { return adminLink('운영현황', 'ops'); },
+  '/usage': function () { return adminLink('사용량분석', 'usage'); },
+  '/security': function () { return adminLink('보안검토', 'security'); },
+};
+
+/** 해시는 `#/경로?키=값` 형태다. 경로와 파라미터를 나눠 돌려준다. */
+function currentRoute() {
+  var raw = location.hash.replace(/^#/, '') || '/dashboard';
+  var i = raw.indexOf('?');
+  var path = (i < 0 ? raw : raw.slice(0, i)) || '/dashboard';
+  var params = {};
+  if (i >= 0) {
+    raw.slice(i + 1).split('&').forEach(function (kv) {
+      var p = kv.split('=');
+      if (p[0]) params[decodeURIComponent(p[0])] = decodeURIComponent(p[1] || '');
+    });
+  }
+  return { path: ROUTES[path] ? path : '/dashboard', params: params };
+}
+
+function render() {
+  var r = currentRoute();
+  var links = document.querySelectorAll('.app-nav a.artifact-link');
+  for (var i = 0; i < links.length; i++) {
+    links[i].classList.toggle('active', links[i].getAttribute('data-r') === r.path);
+  }
+  if (!LEDGER) return;
+
+  var app = document.getElementById('app');
+  app.className = 'app-main view-' + r.path.replace('/', '');
+  app.innerHTML = ROUTES[r.path](LEDGER, r.params);
+  bindFilter();
+
+  // 딥링크로 지목된 행으로 옮겨 준다.
+  if (r.params.req) {
+    var el = document.getElementById('req-' + r.params.req);
+    if (el && el.scrollIntoView) el.scrollIntoView({ block: 'center' });
+  }
+}
+
+window.addEventListener('hashchange', render);
+
+loadLedger().then(function (led) {
+  if (!checkVersion(led.meta)) {
+    document.getElementById('app').innerHTML = noticeBox('화면과 원장의 계약 버전이 다릅니다', [
+      '화면 ' + ACCEPTED_SCHEMA.join('/') + ' / 원장 ' + esc(led.meta && led.meta.schemaVersion),
+      '데이터를 그리지 않습니다 — 화면 또는 원장을 맞춰야 합니다.',
+    ]);
+    return;
+  }
+  LEDGER = led;
+  renderChrome(led);
+  render();
+}).catch(function (e) {
+  document.getElementById('app').innerHTML = loadError(e);
+});
+</script>
+</body>
+</html>

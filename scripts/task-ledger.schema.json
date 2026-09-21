@@ -1,0 +1,126 @@
+{
+  "$comment": "task-ledger.cjs 의 출력 계약. WE-ADP Developer 화면이 의존하는 유일한 명세다. 필드를 더하거나 빼면 meta.schemaVersion 을 올리고 화면의 허용 목록도 함께 올린다. 검증기는 외부 라이브러리 없이 task-ledger.cjs 안에 있으며 draft-07 중 type·required·properties·items·enum·pattern·minimum·additionalProperties 만 해석한다 — 다른 키워드는 쓰지 않는다(조용히 통과한다).",
+  "type": "object",
+  "required": ["meta", "tasks", "requests", "diagnostics"],
+  "additionalProperties": false,
+  "properties": {
+    "meta": {
+      "type": "object",
+      "required": [
+        "schemaVersion", "adpCode", "group", "groupLabel", "generatedAt",
+        "staleDays", "taskCount", "scannedCount", "skippedCount", "requestCount"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "schemaVersion": { "type": "string", "enum": ["1.0"] },
+        "adpCode": { "type": "string", "enum": ["BPL"] },
+        "group": { "type": "string", "pattern": "^_{0,2}[A-Z][A-Z0-9_]*$" },
+        "groupLabel": { "type": "string" },
+        "generatedBy": { "type": ["string", "null"] },
+        "generatedAt": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}T" },
+        "staleDays": { "type": "number", "minimum": 0 },
+        "taskCount": { "type": "number", "minimum": 0 },
+        "scannedCount": { "type": "number", "minimum": 0 },
+        "skippedCount": { "type": "number", "minimum": 0 },
+        "requestCount": { "type": "number", "minimum": 0 }
+      }
+    },
+    "tasks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "taskId", "group", "domain", "domainCode", "entry", "title",
+          "createdAt", "updatedAt", "status", "statusVia", "statusInferred",
+          "owner", "trds", "review", "requestIds"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "taskId": { "type": "string", "pattern": "^([A-Z][A-Z0-9]*-[A-Z0-9]+-\\d{6}-\\d{2}|\\d{1,10}|[A-Za-z0-9_][A-Za-z0-9_.-]{0,79})$" },
+          "group": { "type": "string" },
+          "domain": { "type": "string" },
+          "domainCode": { "type": "string" },
+          "entry": { "type": "string", "enum": ["interview", "plan", "direct", "investigate", "ops", "harness"] },
+          "title": { "type": "string" },
+          "createdAt": { "type": "string" },
+          "updatedAt": { "type": "string" },
+          "status": { "type": "string", "enum": ["접수", "개발중", "리뷰중", "완료"] },
+          "statusVia": { "type": "string" },
+          "statusInferred": { "type": "boolean" },
+          "owner": { "type": ["string", "null"] },
+          "trds": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["trdId", "seq", "title", "status", "statusVia"],
+              "additionalProperties": false,
+              "properties": {
+                "trdId": { "type": "string" },
+                "seq": { "type": "number", "minimum": 0 },
+                "title": { "type": "string" },
+                "status": { "type": "string", "enum": ["개발대기", "개발중", "개발완료"] },
+                "statusVia": { "type": "string" }
+              }
+            }
+          },
+          "review": {
+            "type": ["object", "null"],
+            "required": ["verdict", "critical", "warning", "reviewedAt", "fileCount"],
+            "additionalProperties": false,
+            "properties": {
+              "verdict": { "type": "string" },
+              "critical": { "type": "number", "minimum": 0 },
+              "warning": { "type": "number", "minimum": 0 },
+              "reviewedAt": { "type": "string" },
+              "fileCount": { "type": "number", "minimum": 0 }
+            }
+          },
+          "requestIds": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
+    "requests": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["requestId", "group", "type", "title", "status", "receivedAt", "linkedTaskIds", "source"],
+        "additionalProperties": false,
+        "properties": {
+          "requestId": { "type": "string", "pattern": "^.{1,40}$" },
+          "group": { "type": "string" },
+          "type": { "type": "string", "enum": ["FRD", "SRT"] },
+          "title": { "type": "string" },
+          "status": { "type": "string", "enum": ["요청", "접수", "진행", "완료"] },
+          "receivedAt": { "type": "string" },
+          "linkedTaskIds": { "type": "array", "items": { "type": "string" } },
+          "source": { "type": "string" }
+        }
+      }
+    },
+    "diagnostics": {
+      "type": "object",
+      "required": ["skipped", "warnings"],
+      "additionalProperties": false,
+      "properties": {
+        "$comment": "진단 문자열에 파일 경로가 실리는 것을 계약으로 막는다 — 생성기의 scrub() 이 뚫린 날의 그물이다. scan-publish.sh 패턴에는 경로 축이 없어 게이트가 대신 잡아 주지 못한다. [근거:코드리뷰 2026-09-22 W1]",
+        "skipped": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["taskId", "reason"],
+            "additionalProperties": false,
+            "properties": {
+              "taskId": { "type": "string" },
+              "reason": { "type": "string", "pattern": "^(?![\\s\\S]*(?:[A-Za-z]:[\\\\/]|/Users/|/home/))[\\s\\S]*$" }
+            }
+          }
+        },
+        "warnings": {
+          "type": "array",
+          "items": { "type": "string", "pattern": "^(?![\\s\\S]*(?:[A-Za-z]:[\\\\/]|/Users/|/home/))[\\s\\S]*$" }
+        },
+        "unlinkedTaskIds": { "type": "array", "items": { "type": "string" } }
+      }
+    }
+  }
+}
