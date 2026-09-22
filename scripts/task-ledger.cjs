@@ -387,6 +387,43 @@ function summarizeReview(reviewJsonRel) {
  * 원장을 만든 사람. 과업 수행자가 아니라 **원장 생성자**다.
  * 이름 대신 이메일을 설정한 환경이 있어 형식 검사로 버린다.
  */
+/**
+ * 담당자 배정. **사람이 지정하는 유일한 값**이다.
+ *
+ * 원장은 매 실행마다 통째로 새로 만들기 때문에 사람이 누른 흔적을 담을 자리가 없다.
+ * 그래서 하네스에 배정 파일 하나를 두고 그것만 읽는다 — 형식:
+ *
+ *   { "default": "비플개발센터", "tasks": { "ZERO-PAY-260914-03": "최재혁" } }
+ *
+ * 파일이 없으면 종전대로 `git config user.name`(= 원장을 만든 사람)으로 떨어지되,
+ * 그것이 수행자가 아니라는 사실을 ownerVia 로 데이터에 싣는다.
+ */
+const ASSIGN_FILE = path.join('target', 'assignments.json');
+let _assignCache;
+
+function loadAssignments() {
+  if (_assignCache !== undefined) return _assignCache;
+  try {
+    const raw = JSON.parse(fs.readFileSync(path.join(ROOT, ASSIGN_FILE), 'utf8'));
+    _assignCache = {
+      def: typeof raw.default === 'string' && raw.default ? raw.default : null,
+      tasks: raw.tasks && typeof raw.tasks === 'object' ? raw.tasks : {},
+    };
+  } catch {
+    _assignCache = { def: null, tasks: {} };
+  }
+  return _assignCache;
+}
+
+function assignedOwner(taskId) {
+  const a = loadAssignments();
+  const named = a.tasks[taskId];
+  if (typeof named === 'string' && named.trim()) return { name: named.trim(), via: '배정 파일' };
+  if (a.def) return { name: a.def, via: '배정 파일 기본값' };
+  const who = resolveOwner();
+  return { name: who, via: who ? '원장 생성자(수행자 아님)' : '미배정' };
+}
+
 let _ownerCache;
 function resolveOwner() {
   if (_ownerCache !== undefined) return _ownerCache;
@@ -402,7 +439,19 @@ function resolveOwner() {
 }
 
 /** 그룹 표시명. 레지스트리가 정본이며 실패하면 그룹명을 그대로 쓴다. */
+/**
+ * 작업그룹의 **사람이 읽는 이름**.
+ *
+ * 하네스 레지스트리의 `role`("회원/앱 대면 백엔드")은 개발자용 설명이라 화면에 걸기엔
+ * 낯설다. 워킹그룹에 내보이는 이름은 아래 표가 정본이고, 없으면 레지스트리로 떨어진다.
+ * 표에도 레지스트리에도 없으면 기계 키를 그대로 쓴다 — 지어내지 않는다.
+ */
+const GROUP_LABELS = {
+  BIZ_ZEROPAY: '비플페이',   // 사용자 확정 2026-09-22
+};
+
 function resolveGroupLabel(group) {
+  if (GROUP_LABELS[group]) return GROUP_LABELS[group];
   try {
     const out = execFileSync(process.execPath, [harnessTool('hooks', 'lib', 'registry.js'), 'get-json', group], {
       cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'],
@@ -420,7 +469,9 @@ function enrichTask(task, present) {
     ...t, status: st.value, statusVia: st.via,
   }));
   task.review = summarizeReview(present.reviewJson);
-  task.owner = resolveOwner();
+  const a = assignedOwner(task.taskId);
+  task.owner = a.name;
+  task.ownerVia = a.via;
   return task;
 }
 

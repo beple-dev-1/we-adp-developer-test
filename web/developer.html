@@ -91,20 +91,30 @@ a { color: inherit; }
 
 /* ── 헤더 ─────────────────────────────────────────── */
 .app-header {
-  position: fixed; top: 0; left: 0; right: 0; z-index: 20; height: var(--topbar-height);
-  padding: 0 var(--space-4) 0 calc(var(--sidebar-width) + var(--space-4));
+  position: fixed; top: 0; left: var(--sidebar-width); right: 0; z-index: 20; height: var(--topbar-height);
+  padding: 0 var(--space-4);
   display: flex; align-items: center; gap: var(--space-2);
   background: var(--color-canvas); border-bottom: 1px solid var(--color-line);
 }
-.app-header__brand {
-  position: fixed; left: 0; top: 0; z-index: 21;
-  width: var(--sidebar-width); height: var(--topbar-height); padding: 0 20px;
-  display: flex; align-items: center; gap: 6px;
-  background: var(--sidebar); color: #fff;
-  border-bottom: 1px solid rgb(255 255 255 / 16%);
-  font-size: .9375rem; font-weight: 700; letter-spacing: -.01em;
+
+/* 사이드바 머리 — 제품명 / [ADP코드] 버전 / 구분선.
+   버전을 이름 옆이 아니라 **아래 줄**에 두고 코드 배지와 짝지운다(제안 이미지 규격).
+   코드는 비플페이 ADP 의 BPL 이다 — 제안 이미지의 BZP 는 그 ADP 것이라 그대로 쓰지 않는다. */
+.app-nav__brand { position: relative; padding: 2px 0 16px; margin-bottom: 14px; }
+.app-nav__brand::after {
+  content: ""; position: absolute; right: 0; bottom: 0; left: 0;
+  border-bottom: 1px solid rgb(255 255 255 / 14%);
 }
-.app-header__version { color: rgb(255 255 255 / 62%); font-size: .6875rem; font-weight: 600; }
+.app-nav__brand-name {
+  display: block; color: #fff;
+  font-size: 1rem; font-weight: 750; letter-spacing: -.02em; line-height: 1.25;
+}
+.app-nav__brand-meta { display: flex; align-items: center; gap: 7px; margin-top: 7px; }
+.app-nav__adp {
+  padding: 2px 8px; border: 1px solid rgb(255 255 255 / 26%); border-radius: 5px;
+  color: #fff; font-size: .6875rem; font-weight: 750; letter-spacing: .02em;
+}
+.app-nav__version { color: rgb(255 255 255 / 60%); font-size: .6875rem; font-weight: 600; }
 .app-header__gap { flex: 1 1 auto; }
 /* 원장 신선도. 화면은 파일 한 장을 읽을 뿐이라 **언제 만든 것인지**가 보이지 않으면
    사람은 늘 "지금 상태"로 읽는다. 조용히 낡는 것이 이 화면의 가장 큰 거짓말이다. */
@@ -177,8 +187,8 @@ a { color: inherit; }
 
 /* ── 사이드바 ─────────────────────────────────────── */
 .app-nav {
-  position: fixed; top: var(--topbar-height); left: 0; bottom: 0; z-index: 19;
-  width: var(--sidebar-width); padding: 18px 12px; overflow-y: auto;
+  position: fixed; top: 0; left: 0; bottom: 0; z-index: 19;
+  width: var(--sidebar-width); padding: 16px 16px 18px; overflow-y: auto;
   background: var(--sidebar); color: var(--sidebar-text);
   display: flex; flex-direction: column;
 }
@@ -426,7 +436,6 @@ td .num { display: block; text-align: right; }
 <a class="skip-link" href="#app">본문으로 이동</a>
 
 <header class="app-header">
-  <span class="app-header__brand">WE-ADP Developer<span class="app-header__version">v1.0.0</span></span>
   <span class="app-header__gap"></span>
   <span class="freshness" id="freshness" title="원장 생성 시각"></span>
   <details class="pop pop--notifications" id="alarm">
@@ -443,6 +452,13 @@ td .num { display: block; text-align: right; }
 </header>
 
 <nav class="app-nav" id="developer-navigation">
+  <div class="app-nav__brand">
+    <span class="app-nav__brand-name">WE-ADP Developer</span>
+    <span class="app-nav__brand-meta">
+      <span class="app-nav__adp" id="adp-code" title="비플페이 ADP 구분 코드">BPL</span>
+      <span class="app-nav__version">v1.0.0</span>
+    </span>
+  </div>
   <div class="app-nav__project">
     <details class="app-nav__project-combobox">
       <summary class="app-nav__project-trigger">
@@ -640,8 +656,8 @@ function renderDashboard(led) {
     '<div class="metric-grid">' + cards + '</div>' +
     '<div class="sec"><h2 class="sec__title">접수 추이</h2><div class="sec__desc">최근 14일 · 과업 채번일 기준</div>' +
     '<div class="card"><div class="card__body"><div style="display:flex;align-items:flex-end;gap:4px;height:120px">' + bars + '</div></div></div></div>' +
-    '<div class="sec"><h2 class="sec__title">담당자별 현황</h2><div class="sec__desc">담당자는 원장 생성자입니다 — 과업 수행자가 아닙니다</div>' +
-    tableOf([{ label: '원장 생성자' }].concat(TASK_STATUSES.map(function (s) { return { label: s, num: true }; })), rows) +
+    '<div class="sec"><h2 class="sec__title">담당자별 현황</h2><div class="sec__desc">' + esc(ownerNote(led)) + '</div>' +
+    tableOf([{ label: '담당자' }].concat(TASK_STATUSES.map(function (s) { return { label: s, num: true }; })), rows) +
     '</div></div>';
 }
 
@@ -1056,6 +1072,24 @@ function adminLink(name, key) {
     '</div></div></div>';
 }
 
+/**
+ * 담당자 값의 출처를 문장으로 밝힌다.
+ *
+ * 배정 파일이 없으면 담당자는 **원장을 만든 사람**이라 전원이 같은 이름으로 보인다.
+ * 그 사실을 적지 않으면 보는 사람이 "이 사람이 다 했구나"로 읽는다.
+ */
+function ownerNote(led) {
+  var viaCount = {};
+  led.tasks.forEach(function (t) { viaCount[t.ownerVia] = (viaCount[t.ownerVia] || 0) + 1; });
+  var assigned = (viaCount['배정 파일'] || 0);
+  var fallback = (viaCount['원장 생성자(수행자 아님)'] || 0);
+  if (fallback) {
+    return '담당자가 배정되지 않아 원장 생성자로 표시합니다 — 과업 수행자가 아닙니다 (' +
+      fallback + '건). 지정은 하네스의 target/assignments.json 에서 합니다.';
+  }
+  return '배정 파일 기준입니다 — 과업별 지정 ' + assigned + '건 · 나머지는 기본값.';
+}
+
 /* ── 알림 읽음 상태 ─────────────────────────────── */
 
 /**
@@ -1170,9 +1204,12 @@ function renderFreshness(meta) {
 }
 
 function renderChrome(led) {
-  document.getElementById('group-value').textContent = led.meta.group;
+  // 작업그룹은 **사람이 읽는 이름**을 앞세운다. 기계 키(BIZ_ZEROPAY)는 펼친 목록에서 보인다.
+  document.getElementById('group-value').textContent = led.meta.groupLabel || led.meta.group;
+  document.getElementById('adp-code').textContent = led.meta.adpCode;
   document.getElementById('group-list').innerHTML =
-    '<div class="app-nav__project-option" aria-current="true">' + esc(led.meta.group) + ' — ' + esc(led.meta.groupLabel) + '</div>' +
+    '<div class="app-nav__project-option" aria-current="true">' + esc(led.meta.groupLabel || led.meta.group) +
+    ' <span class="muted">(' + esc(led.meta.group) + ')</span></div>' +
     '<div class="app-nav__project-option" aria-disabled="true">다른 그룹 — 원장 재생성 필요</div>';
 
   NOTICES = led.tasks.slice().sort(function (a, b) {

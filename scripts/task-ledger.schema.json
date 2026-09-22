@@ -32,7 +32,7 @@
         "required": [
           "taskId", "group", "domain", "domainCode", "entry", "title",
           "createdAt", "updatedAt", "status", "statusVia", "statusInferred",
-          "owner", "trds", "review", "requestIds"
+          "owner", "ownerVia", "trds", "review", "requestIds"
         ],
         "additionalProperties": false,
         "properties": {
@@ -48,6 +48,7 @@
           "statusVia": { "type": "string" },
           "statusInferred": { "type": "boolean" },
           "owner": { "type": ["string", "null"] },
+          "ownerVia": { "type": "string", "enum": ["배정 파일", "배정 파일 기본값", "원장 생성자(수행자 아님)", "미배정"] },
           "trds": {
             "type": "array",
             "items": {

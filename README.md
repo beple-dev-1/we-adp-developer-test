@@ -19,6 +19,7 @@ WE-ADP 4단위시스템 중 **Developer** 의 비플페이 구현이다. 작업�
 | `scripts/selftest.cjs` | 회귀 테스트. `node scripts/selftest.cjs` (CI 에서도 돈다) |
 | `web/developer.html` | 화면 1장(의존성 없음). 같은 폴더의 `ledger.json` 을 읽는다 |
 | `docs/task-ledger.md` | 사용법·상태 판정 규칙·**한계표** |
+| `docs/HANDOVER.md` | **인수인계** — 참고 기준·판정 규칙·안 한 것과 이유·남은 일. 처음 받으면 여기부터 |
 
 ## 빠른 시작
 

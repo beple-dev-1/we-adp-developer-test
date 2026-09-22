@@ -3,12 +3,12 @@
     "schemaVersion": "1.0",
     "adpCode": "BPL",
     "group": "BIZ_ZEROPAY",
-    "groupLabel": "회원/앱 대면 백엔드",
+    "groupLabel": "비플페이",
     "generatedBy": "최재혁",
-    "generatedAt": "2026-09-22T05:04:01.603Z",
+    "generatedAt": "2026-09-22T07:47:04.323Z",
     "staleDays": 14,
     "taskCount": 21,
-    "scannedCount": 181,
+    "scannedCount": 186,
     "skippedCount": 0,
     "requestCount": 2
   },
@@ -25,10 +25,11 @@
       "status": "접수",
       "statusVia": "채번됨",
       "statusInferred": false,
-      "owner": "최재혁",
+      "owner": "비플개발센터",
       "trds": [],
       "review": null,
-      "requestIds": []
+      "requestIds": [],
+      "ownerVia": "배정 파일 기본값"
     },
     {
       "taskId": "ZERO-MNY-260916-01",
@@ -40,12 +41,13 @@
       "createdAt": "2026-09-16T05:08:12.193Z",
       "updatedAt": "2026-09-16T05:08:12.194Z",
       "status": "개발중",
-      "statusVia": "최근 활동 5일 전",
+      "statusVia": "최근 활동 6일 전",
       "statusInferred": false,
-      "owner": "최재혁",
+      "owner": "비플개발센터",
       "trds": [],
       "review": null,
-      "requestIds": []
+      "requestIds": [],
+      "ownerVia": "배정 파일 기본값"
     },
     {
       "taskId": "ZERO-PAY-260901-01",
@@ -59,10 +61,11 @@
       "status": "접수",
       "statusVia": "채번됨",
       "statusInferred": false,
-      "owner": "최재혁",
+      "owner": "비플개발센터",
       "trds": [],
       "review": null,
-      "requestIds": []
+      "requestIds": [],
+      "ownerVia": "배정 파일 기본값"
     },
     {
       "taskId": "ZERO-PAY-260902-01",
@@ -76,7 +79,7 @@
       "status": "완료",
       "statusVia": "reviewJson 존재",
       "statusInferred": false,
-      "owner": "최재혁",
+      "owner": "비플개발센터",
       "trds": [],
       "review": {
         "verdict": "PASS",
@@ -85,7 +88,8 @@
         "reviewedAt": "2026-09-02T04:42:55.815Z",
         "fileCount": 2
       },
-      "requestIds": []
+      "requestIds": [],
+      "ownerVia": "배정 파일 기본값"
     },
     {
       "taskId": "ZERO-PAY-260902-02",
@@ -99,7 +103,7 @@
       "status": "완료",
       "statusVia": "reviewJson 존재",
       "statusInferred": false,
-      "owner": "최재혁",
+      "owner": "비플개발센터",
       "trds": [],
       "review": {
         "verdict": "PASS",
@@ -108,7 +112,8 @@
         "reviewedAt": "2026-09-02T08:38:57.602Z",
         "fileCount": 1
       },
-      "requestIds": []
+      "requestIds": [],
+      "ownerVia": "배정 파일 기본값"
     },
     {
       "taskId": "ZERO-PAY-260914-01",
@@ -122,10 +127,11 @@
       "status": "접수",
       "statusVia": "채번됨",
       "statusInferred": false,
-      "owner": "최재혁",
+      "owner": "비플개발센터",
       "trds": [],
       "review": null,
-      "requestIds": []
+      "requestIds": [],
+      "ownerVia": "배정 파일 기본값"
     },
     {
       "taskId": "ZERO-PAY-260914-02",
@@ -139,10 +145,11 @@
       "status": "완료",
       "statusVia": "산출물 존재(완료 표시 아님)",
       "statusInferred": true,
-      "owner": "최재혁",
+      "owner": "비플개발센터",
       "trds": [],
       "review": null,
-      "requestIds": []
+      "requestIds": [],
+      "ownerVia": "배정 파일 기본값"
     },
     {
       "taskId": "ZERO-PAY-260914-03",
@@ -156,7 +163,7 @@
       "status": "개발중",
       "statusVia": "plan 존재",
       "statusInferred": false,
-      "owner": "최재혁",
+      "owner": "비플개발센터",
       "trds": [
         {
           "trdId": "ZERO-PAY-260914-03#1",
@@ -204,7 +211,8 @@
       "review": null,
       "requestIds": [
         "REQ-BPL-0001"
-      ]
+      ],
+      "ownerVia": "배정 파일 기본값"
     },
     {
       "taskId": "ZERO-PAY-260915-01",
@@ -218,10 +226,11 @@
       "status": "완료",
       "statusVia": "산출물 존재(완료 표시 아님)",
       "statusInferred": true,
-      "owner": "최재혁",
+      "owner": "비플개발센터",
       "trds": [],
       "review": null,
-      "requestIds": []
+      "requestIds": [],
+      "ownerVia": "배정 파일 기본값"
     },
     {
       "taskId": "ZERO-PAY-260915-02",
@@ -235,7 +244,7 @@
       "status": "완료",
       "statusVia": "reviewJson 존재",
       "statusInferred": false,
-      "owner": "최재혁",
+      "owner": "비플개발센터",
       "trds": [],
       "review": {
         "verdict": "PASS",
@@ -244,7 +253,8 @@
         "reviewedAt": "2026-09-15T07:46:17Z",
         "fileCount": 1
       },
-      "requestIds": []
+      "requestIds": [],
+      "ownerVia": "배정 파일 기본값"
     },
     {
       "taskId": "ZERO-PAY-260915-03",
@@ -258,7 +268,7 @@
       "status": "완료",
       "statusVia": "reviewJson 존재",
       "statusInferred": false,
-      "owner": "최재혁",
+      "owner": "비플개발센터",
       "trds": [
         {
           "trdId": "ZERO-PAY-260915-03#1",
@@ -282,7 +292,8 @@
         "reviewedAt": "2026-09-16T06:32:22.895Z",
         "fileCount": 1
       },
-      "requestIds": []
+      "requestIds": [],
+      "ownerVia": "배정 파일 기본값"
     },
     {
       "taskId": "ZERO-PAY-260916-01",
@@ -296,7 +307,7 @@
       "status": "완료",
       "statusVia": "reviewJson 존재",
       "statusInferred": false,
-      "owner": "최재혁",
+      "owner": "비플개발센터",
       "trds": [],
       "review": {
         "verdict": "PASS",
@@ -305,7 +316,8 @@
         "reviewedAt": "2026-09-16T02:22:37Z",
         "fileCount": 2
       },
-      "requestIds": []
+      "requestIds": [],
+      "ownerVia": "배정 파일 기본값"
     },
     {
       "taskId": "ZERO-PAY-260916-02",
@@ -317,12 +329,13 @@
       "createdAt": "2026-09-16T07:11:09.821Z",
       "updatedAt": "2026-09-16T07:11:09.822Z",
       "status": "개발중",
-      "statusVia": "최근 활동 5일 전",
+      "statusVia": "최근 활동 6일 전",
       "statusInferred": false,
-      "owner": "최재혁",
+      "owner": "비플개발센터",
       "trds": [],
       "review": null,
-      "requestIds": []
+      "requestIds": [],
+      "ownerVia": "배정 파일 기본값"
     },
     {
       "taskId": "ZERO-PAY-260916-03",
@@ -336,7 +349,7 @@
       "status": "완료",
       "statusVia": "reviewJson 존재",
       "statusInferred": false,
-      "owner": "최재혁",
+      "owner": "비플개발센터",
       "trds": [
         {
           "trdId": "ZERO-PAY-260916-03#1",
@@ -360,7 +373,8 @@
         "reviewedAt": "2026-09-17T07:30:00+09:00",
         "fileCount": 1
       },
-      "requestIds": []
+      "requestIds": [],
+      "ownerVia": "배정 파일 기본값"
     },
     {
       "taskId": "ZERO-PAY-260917-01",
@@ -374,7 +388,7 @@
       "status": "완료",
       "statusVia": "reviewJson 존재",
       "statusInferred": false,
-      "owner": "최재혁",
+      "owner": "비플개발센터",
       "trds": [],
       "review": {
         "verdict": "PASS",
@@ -383,7 +397,8 @@
         "reviewedAt": "2026-09-17T02:01:02.580Z",
         "fileCount": 2
       },
-      "requestIds": []
+      "requestIds": [],
+      "ownerVia": "배정 파일 기본값"
     },
     {
       "taskId": "ZERO-QR-260901-01",
@@ -397,10 +412,11 @@
       "status": "접수",
       "statusVia": "채번됨",
       "statusInferred": false,
-      "owner": "최재혁",
+      "owner": "비플개발센터",
       "trds": [],
       "review": null,
-      "requestIds": []
+      "requestIds": [],
+      "ownerVia": "배정 파일 기본값"
     },
     {
       "taskId": "ZERO-QR-260903-01",
@@ -414,10 +430,11 @@
       "status": "완료",
       "statusVia": "무변경 19일",
       "statusInferred": true,
-      "owner": "최재혁",
+      "owner": "비플개발센터",
       "trds": [],
       "review": null,
-      "requestIds": []
+      "requestIds": [],
+      "ownerVia": "배정 파일 기본값"
     },
     {
       "taskId": "ZERO-QR-260904-01",
@@ -431,10 +448,11 @@
       "status": "완료",
       "statusVia": "무변경 18일",
       "statusInferred": true,
-      "owner": "최재혁",
+      "owner": "비플개발센터",
       "trds": [],
       "review": null,
-      "requestIds": []
+      "requestIds": [],
+      "ownerVia": "배정 파일 기본값"
     },
     {
       "taskId": "ZERO-QR-260904-02",
@@ -448,10 +466,11 @@
       "status": "리뷰중",
       "statusVia": "result 존재",
       "statusInferred": false,
-      "owner": "최재혁",
+      "owner": "비플개발센터",
       "trds": [],
       "review": null,
-      "requestIds": []
+      "requestIds": [],
+      "ownerVia": "배정 파일 기본값"
     },
     {
       "taskId": "ZERO-SMTODR-260904-01",
@@ -465,10 +484,11 @@
       "status": "완료",
       "statusVia": "산출물 존재(완료 표시 아님)",
       "statusInferred": true,
-      "owner": "최재혁",
+      "owner": "비플개발센터",
       "trds": [],
       "review": null,
-      "requestIds": []
+      "requestIds": [],
+      "ownerVia": "배정 파일 기본값"
     },
     {
       "taskId": "ZERO-SMTODR-260917-01",
@@ -480,12 +500,13 @@
       "createdAt": "2026-09-17T07:31:35.232Z",
       "updatedAt": "2026-09-17T07:31:35.233Z",
       "status": "개발중",
-      "statusVia": "최근 활동 4일 전",
+      "statusVia": "최근 활동 5일 전",
       "statusInferred": false,
-      "owner": "최재혁",
+      "owner": "비플개발센터",
       "trds": [],
       "review": null,
-      "requestIds": []
+      "requestIds": [],
+      "ownerVia": "배정 파일 기본값"
     }
   ],
   "requests": [
