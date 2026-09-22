@@ -208,7 +208,12 @@ a { color: inherit; }
 .view-progress > .maxw:last-child { overflow: hidden; }
 .view-progress .card { flex: 1; min-height: 0; display: flex; flex-direction: column; }
 .view-progress .card__head { flex: none; }
-.view-progress .maxw { max-width: none; }
+/* 폭 상한(1320px)을 푸는 화면 — 표의 열이 많아 좁히면 제목이 두세 줄로 접힌다.
+   대시보드·안내 화면은 상한을 유지한다. 글줄이 길어지면 오히려 읽기 나빠진다. */
+.view-progress .maxw,
+.view-inbox .maxw,
+.view-trd .maxw,
+.view-review .maxw { max-width: none; }
 .app-main:not(.view-progress) > .maxw:last-child { overflow-y: auto; padding-right: 2px; }
 .page-head { display: flex; align-items: start; justify-content: space-between; gap: var(--space-4); }
 .page-head__title { font-size: 32px; font-weight: 650; line-height: 1.16; letter-spacing: -.04rem; }
