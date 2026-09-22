@@ -14,9 +14,15 @@
 git clone https://github.com/beple-dev-1/we-adp-developer-test
 cd we-adp-developer-test
 
-node scripts/selftest.cjs     # 회귀 테스트 46건 — 하네스 없어도 돈다
+node scripts/selftest.cjs     # 회귀 테스트 — 하네스 없어도 돈다
+node scripts/task-ledger.cjs --root {하네스경로} --group BIZ_ZEROPAY   # ★ 먼저 원장을 만든다
 node scripts/serve.cjs        # → http://localhost:8080/developer.html
 ```
+
+**`web/ledger.json` 은 레포에 담기지 않는다.** 사람마다 자기 하네스의 과업을 봐야 하는데,
+커밋하면 pull 한 사람이 **만든 사람의 과업**을 보게 되고 각자 재생성분을 커밋하면 서로
+덮어쓴다. 그래서 각자 만든다 — 하네스가 없으면 화면이 "원장을 아직 만들지 않았습니다"
+안내를 띄운다(보기 전용도 안 된다).
 
 `developer.html` 을 **더블클릭하면 화면이 빈다.** 브라우저가 `file://` 에서 `ledger.json` 의
 `fetch` 를 막기 때문이고 파일이 깨진 게 아니다. 반드시 `serve.cjs` 로 띄운다.
@@ -29,7 +35,19 @@ node scripts/greenzone.cjs  build --root {하네스경로} --group BIZ_ZEROPAY
 ```
 
 하네스가 없으면 `exit 2` 로 **명확히 멈춘다**(추측해서 엉뚱한 원장을 만들지 않는다).
-즉 하네스가 없는 사람에게 이 레포는 **보기 전용**이고, 원장은 마지막 커밋 시점에 고정된다.
+
+### 받아서 열면 무엇이 되나
+
+| 항목 | 하네스 있음 | 하네스 없음 |
+|---|---|---|
+| 회귀 테스트 (`selftest.cjs`) | 된다 | **된다** |
+| 화면 뜨기 (`serve.cjs`) | 된다 | **된다** (데이터는 빈 안내) |
+| 원장 생성 → **자기 과업** 보기 | **된다** | 안 된다 |
+| 기능명세서 생성 | 된다 | 안 된다 |
+| 그린존 산출물 보기 | 된다 | **된다** (레포에 담김) |
+
+**하네스가 있으면 `--root` 만 주면 자기 과업이 나온다** — 그것이 의도한 결과다.
+원장을 레포에 담지 않는 이유가 바로 이것이다.
 
 ---
 
@@ -70,7 +88,7 @@ Builder ──push──▶ 저장소 레포 ──clone──▶ Developer ─�
 | `scripts/serve.cjs` | 로컬 정적 서버 | X |
 | `scripts/selftest.cjs` | 회귀 테스트 46건 (CI 에서도 돈다) | X |
 | `web/developer.html` | 화면 1장. 외부 의존 없음(폰트 CDN 만, 폴백 있음) | X |
-| `web/ledger.json` | 화면이 읽는 데이터 | — |
+| `web/ledger.json` | 화면이 읽는 데이터. **레포에 담지 않는다 — 각자 만든다** | O |
 | `greenzone/` | 기능명세서 산출물 | — |
 
 **DB 는 쓰지 않는다.** 연결 코드 0줄. 원장은 매 실행마다 통째로 새로 만드는 **스캔 생성형**이다.

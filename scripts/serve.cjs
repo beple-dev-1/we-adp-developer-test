@@ -40,10 +40,12 @@ if (!Number.isInteger(port) || port < 1 || port > 65535) {
   process.exit(2);
 }
 
+// 원장은 레포에 담기지 않는다(각자 만든다). 없는 것은 **첫 실행의 정상 상태**이므로
+// 서버를 막지 않는다 — 화면이 "아직 만들지 않았습니다" 안내를 띄운다.
 if (!fs.existsSync(path.join(WEB, 'ledger.json'))) {
-  console.error('ERROR: web/ledger.json 이 없다 — 먼저 원장을 만든다:');
-  console.error('  node scripts/task-ledger.cjs --root {하네스루트} --group BIZ_ZEROPAY');
-  process.exit(2);
+  console.log('');
+  console.log('  알림: web/ledger.json 이 없다. 화면은 뜨지만 데이터가 비어 있다.');
+  console.log('        node scripts/task-ledger.cjs --root {하네스루트} --group {그룹}');
 }
 
 const server = http.createServer((req, res) => {
