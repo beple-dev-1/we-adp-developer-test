@@ -1,0 +1,18 @@
+{
+  "zone": "그린존",
+  "artifact": "A1 기능명세서",
+  "taskId": "ZERO-QR-260904-02",
+  "title": "",
+  "writtenAt": "",
+  "scope": "",
+  "purpose": "2026-08-25 11:45 새벽집(313-09-69820)에서 비플머니 QR 고정형 MPM 12,000원 3건이 발생했고\n그중 1건이 `E800 — 집계데이터 등록 중 오류가 발생하였습니다` 로 불능 처리됐다.\n8/26 정산에서 그 가맹점 정산금액이 정확히 12,000원 부족했다.",
+  "requirements": [],
+  "requirementNote": "§2 는 있으나 R-번호 요구사항이 없다 — 이 계획서는 서술형이다",
+  "trds": [],
+  "contract": null,
+  "security": null,
+  "source": {
+    "plan": "plan/dev_plan.md",
+    "phases": 0
+  }
+}

@@ -1,0 +1,110 @@
+{
+  "zone": "그린존",
+  "artifact": "A1 기능명세서",
+  "generatedAt": "2026-09-22T05:38:48.485Z",
+  "group": "BIZ_ZEROPAY",
+  "specs": [
+    {
+      "taskId": "ZERO-PAY-260914-03",
+      "title": "바코드 결제 체크디지트 검증 재계산 방식 전환 (손상 토큰 승인 차단)",
+      "writtenAt": "2026-09-14",
+      "requirementCount": 11,
+      "linkedCount": 11,
+      "trdCount": 6
+    },
+    {
+      "taskId": "ZERO-PAY-260915-03",
+      "title": "키오스크 0원식권 복합결제 정합화 — 잔여 마일리지 우선차감 + 월렛/코인 개방",
+      "writtenAt": "2026-09-15",
+      "requirementCount": 7,
+      "linkedCount": 7,
+      "trdCount": 2
+    },
+    {
+      "taskId": "ZERO-PAY-260916-03",
+      "title": "네이버(기아) 복지포인트 오프라인 잔액조회 지원",
+      "writtenAt": "2026-09-16",
+      "requirementCount": 7,
+      "linkedCount": 7,
+      "trdCount": 2
+    },
+    {
+      "taskId": "ZERO-QR-260904-02",
+      "title": "",
+      "writtenAt": "",
+      "requirementCount": 0,
+      "linkedCount": 0,
+      "trdCount": 0
+    }
+  ],
+  "skipped": [
+    {
+      "id": "ZERO-MCHT-260902-01",
+      "why": "개발 계획서 없음"
+    },
+    {
+      "id": "ZERO-MNY-260916-01",
+      "why": "개발 계획서 없음"
+    },
+    {
+      "id": "ZERO-PAY-260901-01",
+      "why": "개발 계획서 없음"
+    },
+    {
+      "id": "ZERO-PAY-260902-01",
+      "why": "개발 계획서 없음"
+    },
+    {
+      "id": "ZERO-PAY-260902-02",
+      "why": "개발 계획서 없음"
+    },
+    {
+      "id": "ZERO-PAY-260914-01",
+      "why": "개발 계획서 없음"
+    },
+    {
+      "id": "ZERO-PAY-260914-02",
+      "why": "개발 계획서 없음"
+    },
+    {
+      "id": "ZERO-PAY-260915-01",
+      "why": "개발 계획서 없음"
+    },
+    {
+      "id": "ZERO-PAY-260915-02",
+      "why": "개발 계획서 없음"
+    },
+    {
+      "id": "ZERO-PAY-260916-01",
+      "why": "개발 계획서 없음"
+    },
+    {
+      "id": "ZERO-PAY-260916-02",
+      "why": "개발 계획서 없음"
+    },
+    {
+      "id": "ZERO-PAY-260917-01",
+      "why": "개발 계획서 없음"
+    },
+    {
+      "id": "ZERO-QR-260901-01",
+      "why": "개발 계획서 없음"
+    },
+    {
+      "id": "ZERO-QR-260903-01",
+      "why": "개발 계획서 없음"
+    },
+    {
+      "id": "ZERO-QR-260904-01",
+      "why": "개발 계획서 없음"
+    },
+    {
+      "id": "ZERO-SMTODR-260904-01",
+      "why": "개발 계획서 없음"
+    },
+    {
+      "id": "ZERO-SMTODR-260917-01",
+      "why": "개발 계획서 없음"
+    }
+  ]
+}
