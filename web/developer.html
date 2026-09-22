@@ -140,10 +140,28 @@ a { color: inherit; }
 .notice { display: flex; gap: 10px; padding: 10px var(--space-4); border-bottom: 1px solid var(--color-line); text-decoration: none; }
 .notice:last-child { border-bottom: 0; }
 .notice:hover { background: var(--color-soft); }
-.notice__state { width: 6px; height: 6px; margin-top: 8px; border-radius: 50%; background: var(--key); flex: none; }
+/* 점은 **안읽음에만** 켠다. 기본을 켜 두면 전부 안 읽은 것처럼 보여 구분이 사라진다. */
+.notice__state { width: 6px; height: 6px; margin-top: 8px; border-radius: 50%; background: transparent; flex: none; }
+.notice--unread .notice__state { background: var(--key); }
+.notice--unread .notice__copy strong { font-weight: 650; }
+/* ⚠ 선택자에 `.pop__body a` 를 함께 둔 이유 — 나중에 `.pop__body a { color: … }`(0-1-1)가
+   생기면 그냥 `.notice--read`(0-1-0)는 색을 못 이겨 읽은 알림이 흐려지지 않는다.
+   그러면 구분이 조용히 사라진다. 컨셉 목업이 적대검증에서 잡은 함정이라 그대로 따른다. */
+.pop__body a.notice--read,
+.notice--read { color: var(--color-muted); }
+.notice--read .notice__copy strong { font-weight: 500; }
 .notice__copy { min-width: 0; flex: 1; }
 .notice__copy strong { display: block; font-size: .8125rem; font-weight: 600; line-height: 1.5; }
 .notice__copy time { color: var(--color-muted); font-size: .6875rem; }
+.notification-empty { padding: var(--space-6) var(--space-4); color: var(--color-muted); font-size: .8125rem; text-align: center; }
+.notification-panel__head { display: flex; align-items: start; justify-content: space-between; gap: var(--space-3); }
+.notice-readall {
+  flex: none; padding: 4px 8px; border: 1px solid var(--color-line); border-radius: 6px;
+  background: var(--color-canvas); color: var(--color-muted); font-size: .6875rem; font-weight: 600; cursor: pointer;
+}
+.notice-readall:hover { border-color: var(--key); color: var(--key); }
+.notice-readall[disabled] { opacity: .45; cursor: default; }
+.pop .unread[hidden] { display: none; }
 .account-info { margin: 0; padding: var(--space-3) var(--space-4); font-size: .8125rem; }
 
 /* ── 사이드바 ─────────────────────────────────────── */
@@ -1026,6 +1044,91 @@ function adminLink(name, key) {
     '</div></div></div>';
 }
 
+/* ── 알림 읽음 상태 ─────────────────────────────── */
+
+/**
+ * 읽음 표시는 **이 브라우저에만** 남는다.
+ *
+ * 원장은 스캔 생성형이라 매 실행마다 통째로 새로 만든다 — 사람이 누른 흔적을 담을 자리가
+ * 없다. 화면도 정적 파일이라 쓰기를 받아 줄 서버가 없다. 그래서 localStorage 다.
+ * 한계: 다른 PC·다른 브라우저·시크릿 창에서는 다시 안읽음으로 보인다. 원장·다른 사람에게는
+ * 전달되지 않는다.
+ */
+var NOTICE_READ_KEY = 'weadp-bpl-notice-read';
+var NOTICE_READ = null;
+var NOTICES = [];
+
+/** 알림 한 건의 키. 같은 과업이 또 바뀌면 키가 달라져 다시 안읽음이 된다 — 그게 새 알림이다. */
+function noticeKey(t) {
+  return t.taskId + '@' + t.updatedAt;
+}
+
+/** 저장소는 막혀 있을 수 있다(시크릿 창·차단). 못 읽으면 전부 안읽음으로 두고 계속 간다. */
+function readSet() {
+  if (NOTICE_READ) return NOTICE_READ;
+  NOTICE_READ = {};
+  try {
+    var raw = window.localStorage.getItem(NOTICE_READ_KEY);
+    if (raw) JSON.parse(raw).forEach(function (k) { NOTICE_READ[k] = 1; });
+  } catch (e) { /* 저장소를 못 쓰는 환경 — 기능만 죽고 화면은 산다 */ }
+  return NOTICE_READ;
+}
+
+/** 지금 목록에 있는 키만 남겨 저장한다 — 안 그러면 과거 키가 영원히 쌓인다. */
+function saveRead(liveKeys) {
+  var set = readSet();
+  var keep = liveKeys.filter(function (k) { return set[k]; });
+  NOTICE_READ = {};
+  keep.forEach(function (k) { NOTICE_READ[k] = 1; });
+  try {
+    window.localStorage.setItem(NOTICE_READ_KEY, JSON.stringify(keep));
+  } catch (e) { /* 저장 실패는 조용히 넘긴다 — 이번 세션 안에서는 메모리로 동작한다 */ }
+}
+
+/** 알림 패널을 다시 그린다. 배지는 **안읽음 개수**이며 0이면 감춘다. */
+function renderNotices() {
+  var set = readSet();
+  var unread = NOTICES.filter(function (t) { return !set[noticeKey(t)]; }).length;
+
+  var badge = document.getElementById('alarm-count');
+  badge.textContent = unread;
+  badge.hidden = unread === 0;
+
+  var body = NOTICES.length
+    ? NOTICES.map(function (t) {
+        var k = noticeKey(t);
+        // 진행현황의 그 과업 줄로 간다. 라우터가 필터를 풀고 스크롤·강조한다.
+        return '<a class="notice ' + (set[k] ? 'notice--read' : 'notice--unread') + '"' +
+          ' data-key="' + esc(k) + '" href="#/progress?task=' + encodeURIComponent(t.taskId) + '">' +
+          '<span class="notice__state"></span><span class="notice__copy">' +
+          '<strong>' + esc(t.taskId) + ' ' + esc(t.title) + '</strong>' +
+          '<time>' + esc(ymd(t.updatedAt)) + ' · ' + esc(t.status) + '</time></span></a>';
+      }).join('')
+    : '<div class="notification-empty">받은 알림이 없습니다.</div>';
+
+  document.getElementById('alarm-body').innerHTML =
+    '<header class="notification-panel__head"><div><h2>알림</h2>' +
+    '<p>안읽음 ' + unread + ' / 최근 알림 ' + NOTICES.length + '건 · 과업 파일의 최종 변경 기준입니다</p></div>' +
+    '<button type="button" class="notice-readall" id="alarm-readall"' +
+    (unread ? '' : ' disabled') + '>모두 읽음</button></header>' + body;
+
+  var all = document.getElementById('alarm-readall');
+  if (all) {
+    all.onclick = function () {
+      NOTICES.forEach(function (t) { readSet()[noticeKey(t)] = 1; });
+      saveRead(NOTICES.map(noticeKey));
+      renderNotices();
+    };
+  }
+  Array.prototype.forEach.call(document.querySelectorAll('#alarm-body .notice'), function (a) {
+    a.addEventListener('click', function () {
+      readSet()[a.getAttribute('data-key')] = 1;
+      saveRead(NOTICES.map(noticeKey));
+      renderNotices();
+    });
+  });
+}
+
 /* ── 헤더 · 사이드바 ────────────────────────────── */
 
 function renderChrome(led) {
@@ -1034,20 +1137,11 @@ function renderChrome(led) {
     '<div class="app-nav__project-option" aria-current="true">' + esc(led.meta.group) + ' — ' + esc(led.meta.groupLabel) + '</div>' +
     '<div class="app-nav__project-option" aria-disabled="true">다른 그룹 — 원장 재생성 필요</div>';
 
-  var recent = led.tasks.slice().sort(function (a, b) {
+  NOTICES = led.tasks.slice().sort(function (a, b) {
     return String(b.updatedAt).localeCompare(String(a.updatedAt));
   }).slice(0, 12);
-  document.getElementById('alarm-count').textContent = recent.length;
-  document.getElementById('alarm-body').innerHTML =
-    '<header class="notification-panel__head"><h2>알림</h2>' +
-    '<p>최근 알림 ' + recent.length + '건 · 상태 전이 이력이 아니라 파일 최종 변경 기준입니다</p></header>' +
-    recent.map(function (t) {
-      // 진행현황의 그 과업 줄로 간다. 라우터가 필터를 풀고 스크롤·강조한다.
-      return '<a class="notice" href="#/progress?task=' + encodeURIComponent(t.taskId) + '">' +
-        '<span class="notice__state"></span><span class="notice__copy">' +
-        '<strong>' + esc(t.taskId) + ' ' + esc(t.title) + '</strong>' +
-        '<time>' + esc(ymd(t.updatedAt)) + ' · ' + esc(t.status) + '</time></span></a>';
-    }).join('');
+  saveRead(NOTICES.map(noticeKey));   // 목록에서 밀려난 과거 키를 여기서 턴다
+  renderNotices();
 
   var who = led.meta.generatedBy || '(미상)';
   document.getElementById('account-name').textContent = who;
