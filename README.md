@@ -12,7 +12,7 @@ WE-ADP 4단위시스템 중 **Developer** 의 비플페이 구현이다. 작업�
 |---|---|
 | `scripts/task-ledger.cjs` | 원장 생성기. JEX 하네스의 `target/tasks/` 를 스캔한다 |
 | `scripts/task-ledger.schema.json` | **출력 계약의 정본.** 화면이 의존하는 유일한 명세 |
-| `scripts/adapters/` | 작업요청서 수신 어댑터. 파일 하나 = 수신 경로 하나 |
+| `scripts/adapters/` | 작업요청서 수신 어댑터. 파일 하나 = 수신 경로 하나 (**신뢰 경계**) |
 | `scripts/serve.cjs` | 화면을 로컬에서 띄우는 정적 서버. `file://` 로는 안 열린다 |
 | `web/developer.html` | 화면 1장(의존성 없음). 같은 폴더의 `ledger.json` 을 읽는다 |
 | `docs/task-ledger.md` | 사용법·상태 판정 규칙·**한계표** |
@@ -45,8 +45,12 @@ node scripts/serve.cjs                                           # 브라우저�
 
 - 대상 그룹은 `BIZ_ZEROPAY` 하나다. `--group` 으로 넓힐 수 있으나 표준이 그룹 추가·변경 시
   워킹그룹 공유를 요구한다.
-- Builder 수신 인터페이스는 **미합의**다. `scripts/adapters/requests-local.cjs` 는 로컬 파일을
-  읽는 임시 경로이며, 합의되면 어댑터를 하나 더 놓는 것으로 끝난다(본체·스키마·화면 무변경).
+- Builder **전송 방식은 합의됐다**(2026-09-22) — Builder 레포가 저장소 레포
+  (`beple-dev-1/we-adp-repository-test`)로 push 하고 Developer 가 clone/pull 로 받는다.
+  `scripts/adapters/adp-repository.cjs` 가 그 경로를 읽는다.
+- 다만 **요청서 형식은 아직 미정**이라 그 어댑터는 지금 0건을 돌려준다. 저장소 레포 전수에
+  `FRD`·`SRT` 문구가 없고, 들어 있는 것은 IA·화면명세·디자인가이드다. 화면명세를 요청서로
+  바꿔 세는 것은 지어내는 일이라 하지 않았다 — 형식이 정해지면 파싱부만 채운다.
 - Builder 로의 반환(그린존)은 범위 밖이다.
 - DB 없이 스캔만으로 돈다. 로컬 실행 전제다.
 

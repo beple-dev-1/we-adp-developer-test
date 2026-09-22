@@ -146,7 +146,12 @@ cd target/developer && python -m http.server 8080
 
 ## 수신 어댑터 교체
 
-Builder 개발요청서를 어떤 경로로 받을지가 아직 정해지지 않았다. 그래서 수신부를 어댑터로 격리했다.
+**전송 방식은 합의됐고(2026-09-22) 요청서 형식은 아직이다.** 그래서 수신부를 어댑터로 격리했다.
+
+```
+Builder 레포  ──push──▶  저장소 레포  ──clone/pull──▶  Developer
+                github.com/beple-dev-1/we-adp-repository-test
+```
 
 **계약** — 어댑터는 `{ name, load }` 를 내보내고, `load({group, root})` 가 아래 형태의 배열을 돌려준다.
 
@@ -164,8 +169,47 @@ Builder 개발요청서를 어떤 경로로 받을지가 아직 정해지지 않
 > **이 폴더는 신뢰 경계다.** 놓인 파일이 `require` 로 그대로 실행된다.
 > 어댑터 추가는 하네스 파일 수정 원칙(사용자 확인)을 따른다.
 
-1차 구현 `requests-local.cjs` 는 `target/requests/*.json` 을 읽는다. 손으로 넣어도 동작하므로
-Builder 규격이 확정되기 전에도 화면이 돌아간다. `requestId` 가 겹치면 **먼저 로드된 어댑터가 이긴다**.
+`requestId` 가 겹치면 **먼저 로드된 어댑터가 이긴다**.
+
+### 현재 어댑터 2종
+
+| 어댑터 | 읽는 곳 | 상태 |
+|---|---|---|
+| `requests-local.cjs` | `target/requests/*.json` | 동작. 손으로 넣어도 되므로 규격 확정 전에도 화면이 돈다 |
+| `adp-repository.cjs` | 저장소 레포 clone (`target/adp-repository`, `ADP_REPOSITORY_DIR` 로 덮음) | **골격만 — 요청서 0건** |
+
+### `adp-repository` 가 0건인 이유
+
+전송 방식만 합의됐고 **실어 보낼 요청서 형식이 정해지지 않았다.** 2026-09-22 저장소 레포
+전수 실측 — `FRD`·`SRT`·`요청서` 문구가 하나도 없다. 들어 있는 것은 이렇다.
+
+| 내용 | 건수 |
+|---|---|
+| `index.json` 화면 | 454 (BPY 118 · HIT 123 · BPG 79 · MCH 62 · EXW 55 · MGC 17) |
+| 페이지 명세 `.md` | 55 (전부 EXW) — `과업:` 필드는 **55건 전부 비어 있음** |
+| `화면유형` | 454건 전부 `미분류` |
+
+화면명세를 요청서로 바꿔 세는 것은 지어내는 일이라 하지 않는다. Builder 가 형식을 정해
+push 하면 `parseRequests()` 안만 채운다 — 경로 해석·레포 판별·그룹 매핑·경고는 이미 있다.
+
+어댑터의 동작 4가지: clone 없음 → 조용히 0건 · `manifest.json` 못 읽음 → 경고 ·
+toolchain 표식 없음 → 경고 · 레포는 있는데 요청서 0건 → 경고(지금 상태).
+**조용한 0건과 못 읽은 0건을 가르는 것**이 이 경고들의 값이다.
+
+### system → 그룹 매핑
+
+저장소 레포의 `system` 은 Builder 의 시스템 구분이고, 원장의 `group` 은 과업의 프로젝트다.
+축이 달라 옮겨야 한다. **근거가 있는 것만 적는다** — 짐작으로 채우면 남의 그룹 요청이
+수신함에 섞인다.
+
+| system | label | 그룹 | 근거 |
+|---|---|---|---|
+| `EXW` | 외부제공 웹뷰 | `BIZ_ZEROPAY` | 페이지 명세가 `brnd_webview_gift_list_view.jsp` 를 원본으로 지목 |
+| `BPG` | 비플PG | `BPPAY_PG` | `manifest.json` 의 label |
+| `BPY` | 비플페이 앱 | — | 미정 |
+| `HIT` | 힛플러스 | — | 미정 |
+| `MCH` | 가맹점관리 | — | 미정 |
+| `MGC` | 모바일상품권 | — | 미정 |
 
 ---
 
