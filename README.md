@@ -15,6 +15,7 @@ WE-ADP 4단위시스템 중 **Developer** 의 비플페이 구현이다. 작업�
 | `scripts/adapters/` | 작업요청서 수신 어댑터. 파일 하나 = 수신 경로 하나 (**신뢰 경계**) |
 | `scripts/task-paths-driver.cjs` | 경로 해석을 한 프로세스에 모은다. 정본은 여전히 하네스의 `task-paths.cjs` |
 | `scripts/serve.cjs` | 화면을 로컬에서 띄우는 정적 서버. `file://` 로는 안 열린다 |
+| `scripts/greenzone.cjs` | 계획서·TRD → **기능명세서**(그린존 산출물) 유도 |
 | `scripts/selftest.cjs` | 회귀 테스트. `node scripts/selftest.cjs` (CI 에서도 돈다) |
 | `web/developer.html` | 화면 1장(의존성 없음). 같은 폴더의 `ledger.json` 을 읽는다 |
 | `docs/task-ledger.md` | 사용법·상태 판정 규칙·**한계표** |
@@ -53,7 +54,18 @@ node scripts/serve.cjs                                           # 브라우저�
 - 다만 **요청서 형식은 아직 미정**이라 그 어댑터는 지금 0건을 돌려준다. 저장소 레포 전수에
   `FRD`·`SRT` 문구가 없고, 들어 있는 것은 IA·화면명세·디자인가이드다. 화면명세를 요청서로
   바꿔 세는 것은 지어내는 일이라 하지 않았다 — 형식이 정해지면 파싱부만 채운다.
-- Builder 로의 반환(그린존)은 범위 밖이다.
+- **그린존 반환** — 표준상 그린존은 Builder 안의 열람 전용 구역이고 Developer 산출물이 거기
+  올라간다. `scripts/greenzone.cjs` 가 개발 계획서·TRD 에서 **기능명세서**를 유도한다.
+
+  ```bash
+  node scripts/greenzone.cjs build --root ../../ --group BIZ_ZEROPAY   # → greenzone/{과업}/feature-spec.md
+  node scripts/greenzone.cjs export --root ../../ --dest {저장소레포경로}
+  ```
+
+  **화면설계서는 만들지 않는다(사용자 확정 A안)** — ① 계획서·TRD 전 과업에 화면 서술이 0건이라
+  유도할 원본이 없고, ② 저장소 레포의 화면명세 55건을 Builder 가 운영 소스에서 이미 뽑고 있어
+  또 만들면 정본이 둘이 된다.
+- 반환 **전송 방향은 아직 미합의**다. `export` 는 발행 게이트를 지나 복사까지만 하고 push 는 사람이 한다.
 - DB 없이 스캔만으로 돈다. 로컬 실행 전제다.
 
 > `scripts/adapters/` 는 **신뢰 경계**다 — 여기 놓인 `.cjs` 는 `require` 로 실행된다.

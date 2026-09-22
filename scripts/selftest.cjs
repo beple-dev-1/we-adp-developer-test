@@ -41,7 +41,7 @@ for (let i = 0; i < scripts.length; i++) {
   try { new Function(body); pass++; } catch (e) { fails.push('인라인 JS #' + (i + 1) + ' 문법 오류 — ' + e.message); }
 }
 // 모듈은 require 로 (부수효과가 없어야 한다는 것 자체가 검사다).
-for (const f of ['task-ledger.cjs', 'task-paths-driver.cjs', 'adapters/requests-local.cjs', 'adapters/adp-repository.cjs']) {
+for (const f of ['task-ledger.cjs', 'task-paths-driver.cjs', 'greenzone.cjs', 'adapters/requests-local.cjs', 'adapters/adp-repository.cjs']) {
   try { require(path.join(ROOT, 'scripts', f)); pass++; } catch (e) { fails.push(f + ' 로드 실패 — ' + e.message); }
 }
 // CLI 는 require 하면 **실제로 돈다**. serve.cjs 를 require 했다가 서버가 떴다(실측).
@@ -109,6 +109,46 @@ ok('scrub 이 POSIX 홈을 지운다', !/\/Users\//.test(led.scrub('at /Users/fo
 const warnPat = new RegExp(schema.properties.diagnostics.properties.warnings.items.pattern);
 ok('스키마가 경로 섞인 경고를 거부한다',
   !warnPat.test('open C:\\Users\\x') && warnPat.test('ZERO-X: 경로 해석 실패'));
+
+/* ── 6-1. 그린존 기능명세서 ──────────────────────── */
+
+const gz = require(path.join(ROOT, 'scripts', 'greenzone.cjs'));
+
+// section() 은 `m` 플래그의 `$` 때문에 본문이 통째로 비는 회귀가 있었다(실측).
+const sampleMd = [
+  '# 개발 계획서', '',
+  '| 항목 | 내용 |', '|---|---|', '| 제목 | 표본 과업 |', '',
+  '## 1. 과업 개요', '', '첫 문단이다.', '',
+  '### 1-1. 하위절', '', '여기는 목적에 들어가면 안 된다.', '',
+  '## 2. 기능 요구사항', '',
+  '- [ ] **R-X-01** 첫 기능이다.',
+  '- [ ] **R-X-02** 둘째 기능이다.', '',
+  '## 3. 다음', '', '끝.',
+].join(String.fromCharCode(10));
+
+ok('section() 이 §1 본문을 읽는다', /첫 문단이다/.test(gz.section(sampleMd, 1) || ''),
+  'm 플래그의 $ 로 본문이 비던 회귀');
+ok('목적에서 하위절을 뺀다', !/하위절에 들어가면/.test(gz.section(sampleMd, 1) || ''));
+ok('section() 이 다음 헤더에서 끊는다', !/끝\./.test(gz.section(sampleMd, 2) || ''));
+ok('section() 이 없는 절에 null 을 준다', gz.section(sampleMd, 9) === null);
+
+const rq = gz.requirements(sampleMd);
+ok('R-번호 요구사항을 2건 읽는다', rq.items.length === 2);
+ok('요구사항 본문을 요약하지 않고 옮긴다', rq.items[0].text === '첫 기능이다.');
+ok('메타 표에서 제목을 읽는다', gz.metaTable(sampleMd)['제목'] === '표본 과업');
+
+// 원본에 없으면 "해당 없음" 으로 닫는가 — 지어내지 않는 것이 이 도구의 계약이다.
+const bare = gz.specMarkdown(gz.buildSpec('T-000', (function () {
+  const f = path.join(require('os').tmpdir(), 'gz-selftest-' + process.pid + '.md');
+  fs.writeFileSync(f, '# 개발 계획서' + String.fromCharCode(10), 'utf8');
+  return f;
+})(), null));
+ok('빈 계획서는 전부 "해당 없음" 으로 닫는다', (bare.match(/해당 없음/g) || []).length >= 5);
+ok('빈 계획서에 화면설계서를 만들지 않는다', !/화면설계서는 여기 없다[\s\S]*?버튼/.test(bare) || /화면설계서는 여기 없다/.test(bare));
+
+const gzSrc = fs.readFileSync(path.join(ROOT, 'scripts', 'greenzone.cjs'), 'utf8');
+ok('그린존 export 에 우회 인자가 없다', !/--force|skip-scan|no-scan/.test(gzSrc));
+ok('그린존 export 는 push 하지 않는다', !/git\s+push|push\(/.test(gzSrc));
 
 /* ── 7. 발행 게이트 우회 없음 ────────────────────── */
 
