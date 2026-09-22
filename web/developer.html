@@ -128,6 +128,12 @@ a { color: inherit; }
   border: 1px solid var(--color-line); border-radius: var(--radius-control);
   background: var(--color-canvas); box-shadow: 0 12px 32px rgb(8 8 8 / 10%);
 }
+/* 알림 트리거는 컨셉 규격대로 아이콘 + 숫자다 — 글자 라벨을 쓰지 않는다. */
+.notification-trigger { padding: 0 10px; gap: 7px; }
+.notification-trigger svg {
+  width: 18px; height: 18px; flex: none;
+  fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;
+}
 .notification-panel__head { padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--color-line); }
 .notification-panel__head h2 { font-size: .875rem; }
 .notification-panel__head p { margin: 2px 0 0; color: var(--color-muted); font-size: .75rem; }
@@ -307,6 +313,10 @@ tbody tr:hover { background: var(--color-soft); }
   align-items: stretch; min-height: 34px; border-bottom: 1px solid var(--color-line);
 }
 .g-row:last-child { border-bottom: 0; }
+/* 알림에서 지목해 들어온 줄. 어디로 왔는지 보이지 않으면 이동한 보람이 없다.
+   표식은 .g-label 에 단다 — 라벨이 sticky·z-index 3 이라 행의 왼쪽 테두리를 덮는다(실측). */
+.g-row--target { background: var(--color-soft); }
+.g-row--target .g-label { background: var(--color-soft); box-shadow: inset 3px 0 0 var(--key); }
 .g-head { position: sticky; top: 0; z-index: 4; height: var(--axis-height); font-weight: 650; }
 .g-head > div { background: var(--gray-300); color: var(--color-muted); font-size: .75rem; }
 .g-head .g-track { padding-top: 24px; }
@@ -390,7 +400,10 @@ td .num { display: block; text-align: right; }
   <span class="app-header__brand">WE-ADP Developer<span class="app-header__version">v1.0.0</span></span>
   <span class="app-header__gap"></span>
   <details class="pop pop--notifications" id="alarm">
-    <summary>최근 활동 <span class="unread" id="alarm-count">0</span></summary>
+    <summary class="notification-trigger" aria-label="알림">
+      <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"></path></svg>
+      <span class="unread" id="alarm-count">0</span>
+    </summary>
     <div class="pop__body" id="alarm-body"></div>
   </details>
   <details class="pop" id="account">
@@ -724,7 +737,7 @@ function renderProgress(led) {
     var kind = t.status === '완료' ? 'done' : (t.status === '접수' ? 'wait' : 'active');
     var pr = progressOf('task', t, byId);
     var prTxt = t.trds.length ? 'TRD ' + pr.done + '/' + pr.total : 'TRD 없음 (단일 작업)';
-    var rows = '<div class="g-row">' +
+    var rows = '<div class="g-row" id="task-' + esc(t.taskId) + '">' +
       '<div class="g-label' + (indent ? ' ind' : '') + '"><span class="mono muted">' + esc(t.taskId) + '</span>' +
       '<span class="g-tt">' + esc(t.title) + '</span><small>' + esc(t.domainCode) + '</small></div>' +
       '<div class="g-assignment"><span class="g-owner">' + esc(t.owner || '미배정') +
@@ -1026,10 +1039,12 @@ function renderChrome(led) {
   }).slice(0, 12);
   document.getElementById('alarm-count').textContent = recent.length;
   document.getElementById('alarm-body').innerHTML =
-    '<header class="notification-panel__head"><h2>최근 활동</h2>' +
-    '<p>최근 변경 ' + recent.length + '건 · 상태 전이 이력이 아니라 파일 최종 변경 기준입니다</p></header>' +
+    '<header class="notification-panel__head"><h2>알림</h2>' +
+    '<p>최근 알림 ' + recent.length + '건 · 상태 전이 이력이 아니라 파일 최종 변경 기준입니다</p></header>' +
     recent.map(function (t) {
-      return '<a class="notice" href="#/progress"><span class="notice__state"></span><span class="notice__copy">' +
+      // 진행현황의 그 과업 줄로 간다. 라우터가 필터를 풀고 스크롤·강조한다.
+      return '<a class="notice" href="#/progress?task=' + encodeURIComponent(t.taskId) + '">' +
+        '<span class="notice__state"></span><span class="notice__copy">' +
         '<strong>' + esc(t.taskId) + ' ' + esc(t.title) + '</strong>' +
         '<time>' + esc(ymd(t.updatedAt)) + ' · ' + esc(t.status) + '</time></span></a>';
     }).join('');
@@ -1126,9 +1141,31 @@ function render() {
     var el = document.getElementById('req-' + r.params.req);
     if (el && el.scrollIntoView) el.scrollIntoView({ block: 'center' });
   }
+  if (r.params.task) {
+    var row = document.getElementById('task-' + r.params.task);
+    if (row) {
+      if (row.scrollIntoView) row.scrollIntoView({ block: 'center' });
+      row.classList.add('g-row--target');
+    }
+  }
 }
 
-window.addEventListener('hashchange', render);
+/**
+ * 알림에서 들어온 딥링크는 필터를 푼다.
+ *
+ * 필터가 걸린 채로 특정 과업을 지목하면 그 줄이 걸러져 "눌렀는데 아무 일도 안 일어난다".
+ * 지목한 것은 반드시 보여야 한다.
+ */
+function clearFilterForDeepLink() {
+  Object.keys(FILTER).forEach(function (k) { FILTER[k] = ''; });
+}
+
+window.addEventListener('hashchange', function () {
+  var alarm = document.getElementById('alarm');
+  if (alarm) alarm.open = false;
+  if (currentRoute().params.task) clearFilterForDeepLink();
+  render();
+});
 
 loadLedger().then(function (led) {
   if (!checkVersion(led.meta)) {
