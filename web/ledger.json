@@ -5,12 +5,12 @@
     "group": "BIZ_ZEROPAY",
     "groupLabel": "비플페이",
     "generatedBy": "최재혁",
-    "generatedAt": "2026-09-22T08:08:21.809Z",
+    "generatedAt": "2026-09-22T08:47:49.361Z",
     "staleDays": 14,
     "taskCount": 21,
     "scannedCount": 186,
     "skippedCount": 0,
-    "requestCount": 2
+    "requestCount": 3
   },
   "tasks": [
     {
@@ -511,6 +511,16 @@
   ],
   "requests": [
     {
+      "requestId": "DR-009",
+      "group": "BIZ_ZEROPAY",
+      "type": "FRD",
+      "title": "에이블리 회원가입 웹뷰 회원정보 프리필",
+      "status": "요청",
+      "receivedAt": "2026-09-22T08:24:54Z",
+      "linkedTaskIds": [],
+      "source": "adp-repository"
+    },
+    {
       "requestId": "REQ-BPL-0001",
       "group": "BIZ_ZEROPAY",
       "type": "FRD",
@@ -535,9 +545,7 @@
   ],
   "diagnostics": {
     "skipped": [],
-    "warnings": [
-      "adp-repository: 저장소 레포는 있으나 요청서가 0건이다 — Builder 요청서 형식 미합의(전송 방식만 합의됨)"
-    ],
+    "warnings": [],
     "unlinkedTaskIds": []
   }
 }
