@@ -46,7 +46,7 @@ for (const f of ['task-ledger.cjs', 'task-paths-driver.cjs', 'greenzone.cjs', 'a
 }
 // CLI 는 require 하면 **실제로 돈다**. serve.cjs 를 require 했다가 서버가 떴다(실측).
 // 문법만 본다.
-for (const f of ['serve.cjs', 'selftest.cjs']) {
+for (const f of ['serve.cjs', 'selftest.cjs', 'intake.cjs']) {
   try {
     // 셔뱅(#!)은 JS 토큰이 아니다 — node 는 벗겨서 읽지만 new Function 은 그대로 받는다.
     const src = fs.readFileSync(path.join(ROOT, 'scripts', f), 'utf8').split('\n');

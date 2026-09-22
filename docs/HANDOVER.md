@@ -110,13 +110,25 @@ Builder ──push──▶ 저장소 레포 ──clone──▶ Developer ─�
 
 TRD = 계획서의 **페이즈 문서**(`plan/phases/phase_N.md`)다. 아래를 거쳐야 생긴다.
 
+```bash
+# ①채번 ②연결 ③원장재생성 을 한 번에 — 기본은 미리보기, --yes 로 실행
+node scripts/intake.cjs --request REQ-BPL-0001 --entry=plan --root {하네스} --yes
+
+/dev-interview {과업번호}     # entry=interview 일 때만
+/dev-plan {과업번호}          # ★ 여기서 TRD 가 생긴다
 ```
-① 채번   node .claude/scripts/mint-task-id.cjs "<요약>" --entry=interview|plan
-② 연결   target/requests/{요청서}.json 의 linkedTaskIds 에 과업번호 추가
-③ 인터뷰 /dev-interview {과업번호}        ← entry=interview 일 때만
-④ 계획   /dev-plan {과업번호}             ← ★ 여기서 TRD 가 생긴다
-⑤ 재생성 node scripts/task-ledger.cjs --root {하네스} --group {그룹}
-```
+
+`intake.cjs` 가 하는 일 — 요청서를 읽고 도메인을 판정해 채번하고, 요청서 JSON 의
+`linkedTaskIds` 에 되쓰고, 원장을 다시 만든다. 손으로 JSON 을 고치던 자리를 없앤다.
+
+- **기본은 미리보기다.** 채번은 과업 폴더·세션 상태를 만들어 되돌리기가 번거롭다.
+- **`--entry` 에 기본값이 없다.** entry 가 TRD 유무를 가르는데 기본값을 두면 그 선택이
+  조용히 일어난다.
+- **도메인 후보가 여러 개면 과업을 나눈다.** 실측 — "바코드 결제토큰 체크디지트 검증 강화"
+  는 `code_master`·`payment`·`money` 3개가 같은 점수다. 하나를 임의로 고르면 지식 로딩과
+  TC 도메인코드가 오염되므로, 도메인마다 하위 과업을 만들고 요청서에 전부 잇는다.
+  한 도메인으로 묶으려면 `--domain={id}` 로 지정한다.
+- 이미 과업이 연결된 요청서는 **거부**한다(중복 채번 방지).
 
 **`--entry` 가 TRD 유무를 가른다.** `interview`·`plan` 만 계획서를 만들고,
 `direct`·`investigate`·`ops`·`harness` 는 계획서가 없어 **TRD 가 영영 안 생긴다**.

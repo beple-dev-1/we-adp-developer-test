@@ -15,6 +15,7 @@ WE-ADP 4단위시스템 중 **Developer** 의 비플페이 구현이다. 작업�
 | `scripts/adapters/` | 작업요청서 수신 어댑터. 파일 하나 = 수신 경로 하나 (**신뢰 경계**) |
 | `scripts/task-paths-driver.cjs` | 경로 해석을 한 프로세스에 모은다. 정본은 여전히 하네스의 `task-paths.cjs` |
 | `scripts/serve.cjs` | 화면을 로컬에서 띄우는 정적 서버. `file://` 로는 안 열린다 |
+| `scripts/intake.cjs` | 요청서 → 채번·연결·원장재생성 한 번에 (기본 미리보기) |
 | `scripts/greenzone.cjs` | 계획서·TRD → **기능명세서**(그린존 산출물) 유도 |
 | `scripts/selftest.cjs` | 회귀 테스트. `node scripts/selftest.cjs` (CI 에서도 돈다) |
 | `web/developer.html` | 화면 1장(의존성 없음). 같은 폴더의 `ledger.json` 을 읽는다 |
