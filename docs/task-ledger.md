@@ -206,8 +206,8 @@ toolchain 표식 없음 → 경고 · 레포는 있는데 요청서 0건 → 경
 |---|---|---|---|
 | `EXW` | 외부제공 웹뷰 | `BIZ_ZEROPAY` | 페이지 명세가 `brnd_webview_gift_list_view.jsp` 를 원본으로 지목 |
 | `BPG` | 비플PG | `BPPAY_PG` | `manifest.json` 의 label |
-| `BPY` | 비플페이 앱 | — | 미정 |
-| `HIT` | 힛플러스 | — | 미정 |
+| `BPY` | 비플페이 앱 | `BIZ_ZEROPAY` | 사용자 확정 (2026-09-22) |
+| `HIT` | 힛플러스 | `BIZ_ZEROPAY` | 사용자 확정 (2026-09-22) |
 | `MCH` | 가맹점관리 | — | 미정 |
 | `MGC` | 모바일상품권 | — | 미정 |
 

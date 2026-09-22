@@ -49,7 +49,10 @@ const SYSTEM_TO_GROUP = {
   EXW: 'BIZ_ZEROPAY',
   // manifest.json 의 label 이 "비플PG" 다.
   BPG: 'BPPAY_PG',
-  // BPY(비플페이 앱) · HIT(힛플러스) · MCH(가맹점관리) · MGC(모바일상품권) 은 미정.
+  // 사용자 확정 (2026-09-22) — 비플페이 앱 · 힛플러스.
+  BPY: 'BIZ_ZEROPAY',
+  HIT: 'BIZ_ZEROPAY',
+  // MCH(가맹점관리) · MGC(모바일상품권) 은 미정.
 };
 
 /**
