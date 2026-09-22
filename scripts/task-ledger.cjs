@@ -31,6 +31,7 @@
 const fs = require('fs');
 const path = require('path');
 const { execFileSync } = require('child_process');
+const driver = require('./task-paths-driver.cjs');
 
 // 경로는 두 축으로 갈린다. 섞지 말 것.
 //   ① 하네스 축 (ROOT 기준) — 스캔 대상 target/tasks/ 와 하네스 소유 도구 3종
@@ -212,20 +213,26 @@ function filterGroup(rawTasks, group) {
   return rawTasks.filter((t) => t.intake.project === group);
 }
 
-/** 경로 해석은 task-paths.cjs 가 정본이다. 과업당 1회만 spawn 한다. */
-function resolvePaths(taskId) {
-  try {
-    const out = execFileSync(process.execPath, [harnessTool('scripts', 'task-paths.cjs'), taskId], {
-      cwd: ROOT,
-      encoding: 'utf8',
-      stdio: ['ignore', 'pipe', 'pipe'],
-    });
-    const parsed = JSON.parse(out);
-    return { present: parsed.present || {}, warning: null };
-  } catch (e) {
-    // 실패해도 예외로 중단하지 않는다 — 한 과업 때문에 원장 전체가 죽지 않게 한다.
-    return { present: {}, warning: `${taskId}: 경로 해석 실패 (${scrub(e.code || e.message)})` };
+/**
+ * 경로 해석은 task-paths.cjs 가 정본이다. **한 번에 모아서** 해석한다.
+ *
+ * 과업마다 spawn 하던 것을 바꿨다 — 비용의 90%가 node 기동이라 21건 7.3초, 181건 49초였다.
+ * 정본은 그대로 task-paths.cjs 이고 하네스 파일은 고치지 않았다(driver 주석 참조).
+ * 실측 181건 49,164ms → 611ms.
+ */
+function resolveAllPaths(taskIds) {
+  const r = driver.resolveMany(harnessTool('scripts', 'task-paths.cjs'), taskIds);
+  const warnings = r.warns.map(scrub);
+  const present = {};
+  for (const id of taskIds) {
+    if (r.map[id]) present[id] = r.map[id].present || {};
+    else {
+      present[id] = {};
+      // 한 과업이 실패해도 원장 전체를 죽이지 않는다.
+      warnings.push(`${id}: 경로 해석 실패`);
+    }
   }
+  return { present, warnings, mode: r.mode };
 }
 
 /** 과업 폴더 하위 전체 파일의 최대 mtime 과 경과일. */
@@ -584,9 +591,11 @@ function buildLedger(opts) {
   const mine = filterGroup(all, opts.group);
   const warnings = [];
 
+  const resolved = resolveAllPaths(mine.map((t) => t.taskId));
+  resolved.warnings.forEach((w) => warnings.push(w));
+
   const tasks = mine.map((t) => {
-    const { present, warning } = resolvePaths(t.taskId);
-    if (warning) warnings.push(warning);
+    const present = resolved.present[t.taskId] || {};
     const touched = lastTouched(t.dir, now);
     const st = deriveStatus(t.intake.entry, present, touched, opts.staleDays, hasArtifacts(t.dir));
 

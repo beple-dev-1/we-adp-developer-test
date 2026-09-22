@@ -13,7 +13,9 @@ WE-ADP 4단위시스템 중 **Developer** 의 비플페이 구현이다. 작업�
 | `scripts/task-ledger.cjs` | 원장 생성기. JEX 하네스의 `target/tasks/` 를 스캔한다 |
 | `scripts/task-ledger.schema.json` | **출력 계약의 정본.** 화면이 의존하는 유일한 명세 |
 | `scripts/adapters/` | 작업요청서 수신 어댑터. 파일 하나 = 수신 경로 하나 (**신뢰 경계**) |
+| `scripts/task-paths-driver.cjs` | 경로 해석을 한 프로세스에 모은다. 정본은 여전히 하네스의 `task-paths.cjs` |
 | `scripts/serve.cjs` | 화면을 로컬에서 띄우는 정적 서버. `file://` 로는 안 열린다 |
+| `scripts/selftest.cjs` | 회귀 테스트. `node scripts/selftest.cjs` (CI 에서도 돈다) |
 | `web/developer.html` | 화면 1장(의존성 없음). 같은 폴더의 `ledger.json` 을 읽는다 |
 | `docs/task-ledger.md` | 사용법·상태 판정 규칙·**한계표** |
 

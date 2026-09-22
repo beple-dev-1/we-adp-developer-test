@@ -1,0 +1,28 @@
+name: selftest
+
+# 하네스 워킹카피가 없어도 도는 것만 검사한다.
+# 원장 생성은 target/tasks/ 가 있어야 하므로 여기서 돌리지 않는다 — 로컬에서 돌린다.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  selftest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: 회귀 테스트
+        run: node scripts/selftest.cjs
+      - name: 원장 계약이 화면과 맞는가
+        run: node -e "JSON.parse(require('fs').readFileSync('web/ledger.json','utf8'))"
+      - name: 진단에 경로가 실리지 않았는가
+        run: |
+          if grep -qE '[A-Za-z]:[\\/]|/Users/|/home/' web/ledger.json; then
+            echo "원장에 파일 경로가 실렸다 — 공개 레포로 나가면 안 된다"; exit 1
+          fi
+          echo "경로 0건"
