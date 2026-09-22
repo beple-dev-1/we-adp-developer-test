@@ -56,7 +56,7 @@ node scripts/greenzone.cjs  build --root {하네스경로} --group BIZ_ZEROPAY
 WE-ADP 4단위시스템(Planner · Builder · **Developer** · Admin) 중 Developer 의 비플페이 구현.
 
 ```
-Builder ──push──▶ 저장소 레포 ──clone──▶ Developer ──개발──▶ 그린존 반환
+Builder ──push──▶ 저장소 레포 ──clone/fetch──▶ Developer ──개발──▶ 그린존 반환
                                             │
                                    하네스 target/tasks/ 스캔
                                             ▼

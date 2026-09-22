@@ -44,14 +44,23 @@ dr/DR-009
 
 ```bash
 cd target/adp-repository
-git fetch origin "+refs/heads/*:refs/remotes/origin/*"
+git fetch origin
 ```
 
 ```
 브랜치 origin/dr/DR-009  (2026-09-22)
 ```
 
-> `git pull` 만 하면 `main` 만 갱신돼 **안 보인다.** 꾸러미는 브랜치로 온다.
+> **`git pull` 로는 안 보인다.** 꾸러미는 `main` 이 아니라 브랜치로 오고, `pull` 은 현재
+> 브랜치(`main`)만 갱신한다. `fetch` 로 원격 브랜치를 받아야 한다.
+
+> ⚠ **저장소 레포는 얕게 클론하지 말 것.** `git clone --depth N` 은 `--single-branch` 를
+> 암묵 적용해 refspec 이 `+refs/heads/main:refs/remotes/origin/main` 으로 좁혀진다.
+> 그러면 `fetch` 를 해도 `dr/*` 가 영영 안 온다(실측 — 첫 클론이 그래서 DR-009 를 놓쳤다).
+> 이미 얕게 받았다면 한 줄로 고친다:
+> ```bash
+> git config remote.origin.fetch "+refs/heads/*:refs/remotes/origin/*"
+> ```
 
 ---
 
@@ -205,7 +214,7 @@ node scripts/greenzone.cjs export --root ../../ --dest ../adp-repository/greenzo
 
 | 단계 | 명령 | 누가 |
 |---|---|---|
-| 받기 | `git fetch origin "+refs/heads/*:refs/remotes/origin/*"` | 기계 |
+| 받기 | `git fetch origin` (얕은 클론 금지 — 위 ② 참조) | 기계 |
 | 수신함 반영 | `node scripts/task-ledger.cjs --root … --group …` | 기계 |
 | 채번·연결 | `node scripts/intake.cjs --request … --entry=… --yes` | 기계(단계는 사람이 고름) |
 | TRD 생성 | `/dev-interview` → `/dev-plan` | **사람** |

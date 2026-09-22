@@ -9,6 +9,12 @@
  * 전송 꾸러미는 **브랜치**로 온다 — `dr/{DR-###}` (실측 2026-09-22 DR-009 첫 수신).
  * `main` 만 보면 안 보인다. 어댑터는 `origin/dr/*` 를 훑어 브랜치째로 읽는다.
  *
+ * ⚠ 이 어댑터는 **받아 놓은 것을 읽기만 한다** — 네트워크를 치지 않는다. 새 꾸러미는
+ *   사람이 `git fetch` 로 먼저 받아야 한다. 그리고 clone 이 얕으면(`--depth N` 은
+ *   `--single-branch` 를 암묵 적용) refspec 이 `main` 하나로 좁혀져 **fetch 를 해도
+ *   `dr/*` 가 영영 안 온다**(실측 — 첫 클론이 그래서 DR-009 를 놓쳤다). 그 상태는
+ *   "온 게 없다" 와 구별이 안 되므로 아래 drRefs 가 브랜치 0건일 때도 사유를 남긴다.
+ *
  *   {DR}/manifest.json   specVersion · request.label · screens[] · expectedBack
  *   {DR}/dev-request.md  FRD 본문 (머리표에 원천 유형 FRD/SRT)
  *   {DR}/screens/{SYS}/{화면ID}/{as-is,to-be,changes}.{html,md}
