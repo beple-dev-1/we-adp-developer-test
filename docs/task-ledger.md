@@ -31,10 +31,13 @@
 node scripts/task-ledger.cjs --root ../../ --group BIZ_ZEROPAY
 #    → web/ledger.json
 
-# 2. 화면 열기 (file:// 는 fetch 가 막힌다 — 로컬 서버가 필요하다)
-cd web && python -m http.server 8080
-#   → http://localhost:8080/developer.html
+# 2. 화면 열기
+node scripts/serve.cjs            # 기본 8080 · 브라우저 자동 실행
+node scripts/serve.cjs --port 9000 --no-open
 ```
+
+**`file://` 로 직접 열면 화면이 빈다.** 브라우저가 `ledger.json` 의 `fetch` 를 막는다(CORS).
+화면이나 원장이 잘못된 것이 아니므로 `serve.cjs` 로 띄워서 본다.
 
 `--root` 를 생략하면 스크립트 위치와 현재 폴더에서 위로 올라가며 하네스를 찾고,
 `JEX_HARNESS_ROOT` 환경변수도 본다. 찾지 못하면 `exit 2` 로 끝난다 — 추측하지 않는다.

@@ -13,6 +13,7 @@ WE-ADP 4단위시스템 중 **Developer** 의 비플페이 구현이다. 작업�
 | `scripts/task-ledger.cjs` | 원장 생성기. JEX 하네스의 `target/tasks/` 를 스캔한다 |
 | `scripts/task-ledger.schema.json` | **출력 계약의 정본.** 화면이 의존하는 유일한 명세 |
 | `scripts/adapters/` | 작업요청서 수신 어댑터. 파일 하나 = 수신 경로 하나 |
+| `scripts/serve.cjs` | 화면을 로컬에서 띄우는 정적 서버. `file://` 로는 안 열린다 |
 | `web/developer.html` | 화면 1장(의존성 없음). 같은 폴더의 `ledger.json` 을 읽는다 |
 | `docs/task-ledger.md` | 사용법·상태 판정 규칙·**한계표** |
 
@@ -21,8 +22,12 @@ WE-ADP 4단위시스템 중 **Developer** 의 비플페이 구현이다. 작업�
 ```bash
 # 이 레포를 JEX 하네스 워킹카피 안에 둔다 (권장: <하네스>/target/developer-repo/)
 node scripts/task-ledger.cjs --root ../../ --group BIZ_ZEROPAY   # → web/ledger.json
-cd web && python -m http.server 8080                             # → localhost:8080/developer.html
+node scripts/serve.cjs                                           # 브라우저가 열린다
 ```
+
+`developer.html` 을 **더블클릭(`file://`)으로 열면 화면이 빈다** — 브라우저가 `ledger.json` 의
+`fetch` 를 막기 때문이고, 파일이 잘못된 것이 아니다. `serve.cjs` 가 그 한 가지를 해결한다
+(의존성 없음 · `--port` · `--no-open`).
 
 `--root` 는 스캔할 하네스 루트다. 생략하면 스크립트 위치와 현재 폴더에서 위로 올라가며 찾고,
 `JEX_HARNESS_ROOT` 도 본다. **찾지 못하면 `exit 2`** — 추측해서 엉뚱한 원장을 만들지 않는다.
