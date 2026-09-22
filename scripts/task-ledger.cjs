@@ -540,7 +540,41 @@ function collectRequests(adapters, group) {
       requests.push({ ...r, group: r.group || group, source: ad.name });
     }
   }
+
+  // 과업 연결을 얹는다. 수신원이 읽기 전용일 수 있어(브랜치로 오는 꾸러미) 연결은
+  // 어댑터가 아니라 **로컬 저장소**에 둔다 — 어댑터가 준 값과 합집합한다.
+  const links = loadRequestLinks();
+  for (const r of requests) {
+    const extra = links[r.requestId] || [];
+    if (!extra.length) continue;
+    const merged = r.linkedTaskIds.slice();
+    for (const t of extra) if (merged.indexOf(t) < 0) merged.push(t);
+    r.linkedTaskIds = merged;
+  }
   return { requests, warns };
+}
+
+/**
+ * 요청서 ↔ 과업 연결 저장소.
+ *
+ * `target/requests/*.json` 은 로컬 수신분에만 있고, 저장소 레포에서 **브랜치로** 오는
+ * 꾸러미는 남의 레포라 되쓸 수 없다. 그래서 연결은 수신 형식과 무관한 한 곳에 둔다.
+ *   { "DR-009": ["ZERO-MEMBER-260922-01"] }
+ * 쓰는 것은 intake.cjs 다.
+ */
+const REQUEST_LINKS = path.join('target', 'request-links.json');
+
+function loadRequestLinks() {
+  try {
+    const raw = JSON.parse(fs.readFileSync(path.join(ROOT, REQUEST_LINKS), 'utf8'));
+    const out = {};
+    for (const k of Object.keys(raw)) {
+      if (Array.isArray(raw[k])) out[k] = raw[k].map(String).filter(Boolean);
+    }
+    return out;
+  } catch (e) {
+    return {};
+  }
 }
 
 /** requests[].linkedTaskIds 를 단일 원천으로 tasks[].requestIds 역참조를 만든다. */

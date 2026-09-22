@@ -85,16 +85,30 @@ if (!HARNESS) die(2, '하네스 루트를 찾지 못했다 — --root 로 지정
 
 /* ── 요청서 읽기 ─────────────────────────────────── */
 
-const reqFile = path.join(HARNESS, 'target', 'requests', o.request + '.json');
-let req;
+/**
+ * 요청서는 **원장에서** 찾는다.
+ *
+ * 수신 경로가 둘이다 — 로컬 파일(`target/requests/*.json`)과 저장소 레포 브랜치.
+ * 파일만 보면 브랜치로 온 것을 못 찾는다(실측: DR-009 가 그랬다). 원장은 어댑터를 이미
+ * 합쳐 놓았으므로 거기서 찾으면 수신 형식과 무관하게 같은 방식으로 다룬다.
+ */
+const LEDGER_FILE = path.join(__dirname, '..', 'web', 'ledger.json');
+let ledger;
 try {
-  req = JSON.parse(fs.readFileSync(reqFile, 'utf8'));
+  ledger = JSON.parse(fs.readFileSync(LEDGER_FILE, 'utf8'));
 } catch (e) {
-  die(2, '요청서를 읽지 못했다: target/requests/' + o.request + '.json');
+  die(2, '원장을 읽지 못했다 — 먼저 만든다:\n' +
+        '  node scripts/task-ledger.cjs --root {하네스} --group {그룹}');
+}
+const req = (ledger.requests || []).filter((r) => r.requestId === o.request)[0];
+if (!req) {
+  die(2, '원장에 없는 요청서다: ' + o.request + '\n' +
+        '  받은 것: ' + ((ledger.requests || []).map((r) => r.requestId).join(', ') || '(없음)') + '\n' +
+        '  저장소 레포에서 새로 왔다면 pull 한 뒤 원장을 다시 만든다.');
 }
 if (Array.isArray(req.linkedTaskIds) && req.linkedTaskIds.length) {
   die(1, '이미 과업이 연결된 요청서다: ' + req.linkedTaskIds.join(', ') + '\n' +
-        '  다시 채번하려면 요청서의 linkedTaskIds 를 먼저 비운다.');
+        '  다시 채번하려면 target/request-links.json 에서 그 항목을 지운다.');
 }
 if (!req.group) die(2, '요청서에 group 이 없다 — 어느 프로젝트로 채번할지 알 수 없다');
 
@@ -185,10 +199,14 @@ for (const p of plan) {
   console.log('  채번  ' + intake.taskId + '  [' + p.domain + ']');
 }
 
-// 요청서에 잇는다. 손으로 고치던 자리다 — 오타·누락이 조용히 나던 곳이다.
-req.linkedTaskIds = minted.map(function (m) { return m.taskId; });
-fs.writeFileSync(reqFile, JSON.stringify(req, null, 2) + '\n', 'utf8');
-console.log('  연결  ' + o.request + '.json  ← ' + req.linkedTaskIds.join(', '));
+// 연결은 **연결 저장소**에 쓴다. 수신원이 남의 레포 브랜치일 수 있어 되쓸 수 없고,
+// 형식마다 다른 자리에 쓰면 인테이크가 수신 경로를 알아야 한다. 한 곳으로 모은다.
+const linkFile = path.join(HARNESS, 'target', 'request-links.json');
+let links = {};
+try { links = JSON.parse(fs.readFileSync(linkFile, 'utf8')); } catch (e) { links = {}; }
+links[o.request] = minted.map(function (m) { return m.taskId; });
+fs.writeFileSync(linkFile, JSON.stringify(links, null, 2) + '\n', 'utf8');
+console.log('  연결  target/request-links.json  ' + o.request + ' ← ' + links[o.request].join(', '));
 
 // 원장 재생성 — 안 하면 화면이 그대로라 "안 된 줄" 안다.
 try {
