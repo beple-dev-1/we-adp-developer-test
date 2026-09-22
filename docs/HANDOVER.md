@@ -106,6 +106,26 @@ Builder ──push──▶ 저장소 레포 ──clone──▶ Developer ─�
 `investigate`/`ops`/`harness` 는 완료 표시를 남기지 않으므로 **산출물 존재** 또는 **14일 무변경**
 으로 완료를 보되 `statusInferred:true` 를 붙인다.
 
+### TRD 는 언제 생기나
+
+TRD = 계획서의 **페이즈 문서**(`plan/phases/phase_N.md`)다. 아래를 거쳐야 생긴다.
+
+```
+① 채번   node .claude/scripts/mint-task-id.cjs "<요약>" --entry=interview|plan
+② 연결   target/requests/{요청서}.json 의 linkedTaskIds 에 과업번호 추가
+③ 인터뷰 /dev-interview {과업번호}        ← entry=interview 일 때만
+④ 계획   /dev-plan {과업번호}             ← ★ 여기서 TRD 가 생긴다
+⑤ 재생성 node scripts/task-ledger.cjs --root {하네스} --group {그룹}
+```
+
+**`--entry` 가 TRD 유무를 가른다.** `interview`·`plan` 만 계획서를 만들고,
+`direct`·`investigate`·`ops`·`harness` 는 계획서가 없어 **TRD 가 영영 안 생긴다**.
+실측 — BIZ_ZEROPAY 21건 중 `plan` 5 · `direct` 8 · `investigate` 7 · `ops` 1.
+계획서 36건 중 33건이 페이즈를 가진다(나머지 3건은 단일 작업).
+
+세부 업무 내용 화면이 **지금 어느 단계인지에 맞춰 이 명령을 보여 준다.**
+화면은 실행하지 않는다 — 터미널에서 친 뒤 원장을 다시 만들면 반영된다.
+
 ### TRD 상태 — ⚠ 지금은 유도값이다
 
 TRD = 계획서의 페이즈 문서다. 페이즈 문서에 **기계가 읽을 완료 표시가 없어**(실측 84건)
