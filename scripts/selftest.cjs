@@ -41,7 +41,7 @@ for (let i = 0; i < scripts.length; i++) {
   try { new Function(body); pass++; } catch (e) { fails.push('인라인 JS #' + (i + 1) + ' 문법 오류 — ' + e.message); }
 }
 // 모듈은 require 로 (부수효과가 없어야 한다는 것 자체가 검사다).
-for (const f of ['task-ledger.cjs', 'task-paths-driver.cjs', 'greenzone.cjs', 'adapters/requests-local.cjs', 'adapters/adp-repository.cjs']) {
+for (const f of ['task-ledger.cjs', 'task-paths-driver.cjs', 'greenzone.cjs', 'greenzone-return.cjs', 'adapters/requests-local.cjs', 'adapters/adp-repository.cjs']) {
   try { require(path.join(ROOT, 'scripts', f)); pass++; } catch (e) { fails.push(f + ' 로드 실패 — ' + e.message); }
 }
 // CLI 는 require 하면 **실제로 돈다**. serve.cjs 를 require 했다가 서버가 떴다(실측).
@@ -149,6 +149,57 @@ ok('빈 계획서에 화면설계서를 만들지 않는다', !/화면설계서�
 const gzSrc = fs.readFileSync(path.join(ROOT, 'scripts', 'greenzone.cjs'), 'utf8');
 ok('그린존 export 에 우회 인자가 없다', !/--force|skip-scan|no-scan/.test(gzSrc));
 ok('그린존 export 는 push 하지 않는다', !/git\s+push|push\(/.test(gzSrc));
+
+/* ── 6-2. DR 회신 (greenzone-return) ─────────────── */
+
+const gr = require(path.join(ROOT, 'scripts', 'greenzone-return.cjs'));
+const grSrc = fs.readFileSync(path.join(ROOT, 'scripts', 'greenzone-return.cjs'), 'utf8');
+
+// 반환 브랜치는 v2 `feedback/{시스템}/{DR}` · v3 `feedback/{DR}` 로 마디 수가 다르다.
+// 조립하면 v3 에서 틀린 브랜치로 올라가고, 그건 거절이 아니라 **엉뚱한 곳에 올라간 것**이다.
+ok('반환 브랜치를 조립하지 않는다', !/["']feedback\/["']\s*\+/.test(grSrc),
+  'manifest 의 returnBranch 문자열을 그대로 써야 한다');
+ok('회신 도구가 push 하지 않는다', !/\[["']push["']/.test(grSrc));
+ok('회신 도구에 게이트 우회 인자가 없다', !/--force|skip-check|no-check/.test(grSrc));
+ok('규격 정본이 manifest 다', /manifest\.json/.test(grSrc) && /expectedBack/.test(grSrc));
+
+// 자리는 규격이 정한 세 가지뿐이다. `ia.md` 는 받지 않는다.
+ok('pages 자리', gr.slotPath('pages', 'EXW', 'S-1') === 'core/EXW/pages/S-1.html');
+ok('screen-md 자리', gr.slotPath('screen-md', 'EXW', 'S-1') === 'core/EXW/pages/S-1.md');
+ok('index 자리', gr.slotPath('index', 'EXW', 'S-1') === 'index.json');
+ok('모르는 구성요소는 자리를 만들지 않는다', gr.slotPath('ia', 'EXW', 'S-1') === null);
+
+// 칸 가르기 — 셀 안의 이스케이프한 세로줄을 칸으로 세면 9칸 검사가 통째로 무너진다.
+ok('표를 9칸으로 가른다', gr.splitRow('| a | b | c | d | e | f |  |  |  |').length === 9);
+ok('이스케이프한 세로줄을 칸으로 세지 않는다',
+  gr.splitRow('| TC-001 | a \\| b | c | d | e | f |  |  |  |').length === 9);
+
+// 9칸 원본(v2 expected-back.md)은 앞 6칸을 그대로 옮긴다.
+const nine = gr.parseTcRows('| TC-001 | 무엇 | 의존 | 조건 | 행위 | 기대 |  |  |  |');
+ok('9칸 원본에서 앞 6칸을 옮긴다', !!nine['TC-001'] && nine['TC-001'][4] === '행위');
+ok('앞 6칸을 요약하지 않는다', nine['TC-001'][1] === '무엇');
+
+// 3칸 원본(v3 test-cases.md)은 아는 두 칸만 옮긴다 — 나머지는 지어내지 않는다.
+const three = gr.parseTcRows('| TC-002 | 무엇 | 기대 |');
+ok('3칸 원본의 무엇을 옮긴다', !!three['TC-002'] && three['TC-002'][1] === '무엇');
+ok('3칸 원본의 기대를 기대 결과 자리에 둔다', three['TC-002'][5] === '기대');
+ok('3칸 원본의 모르는 칸을 지어내지 않는다',
+  three['TC-002'][2] === '—' && three['TC-002'][3] === '—' && three['TC-002'][4] === '—');
+
+// 낸 표가 9칸이 아니면 Builder 가 그 줄을 못 읽는다.
+const tblRow = gr.tcTable('T', ['TC-001'], { rows: nine }, [])
+  .split('\n').filter(function (l) { return /^\| TC-001 /.test(l); })[0] || '';
+ok('낸 표가 9칸이다', gr.splitRow(tblRow).length === gr.TC_COLUMNS.length);
+ok('낸 표의 뒤 3칸은 비어 있다', gr.splitRow(tblRow).slice(6).join('') === '',
+  '판정을 대신 채우면 없는 TC 매핑을 지어내는 것이다');
+
+// 원본에 없는 TC 는 앞 칸을 지어내지 않되 조용히 지나가지도 않는다.
+const grWarns = [];
+gr.tcTable('T', ['TC-404'], { rows: {} }, grWarns);
+ok('원본에 없는 TC 를 경고로 남긴다', grWarns.length === 1 && /TC-404/.test(grWarns[0]));
+
+ok('판정 어휘가 규약대로다', gr.VERDICTS.join(',') === '통과,PASS,OK,실패,FAIL,NG');
+ok('상태값은 둘뿐이다', gr.STATES.join(',') === 'changed,unchanged');
 
 /* ── 7. 발행 게이트 우회 없음 ────────────────────── */
 

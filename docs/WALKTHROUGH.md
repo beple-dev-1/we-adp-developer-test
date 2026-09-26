@@ -18,9 +18,10 @@
 ⑤ /dev-interview → /dev-plan   ← TRD 가 생긴다 (사람)
 ⑥ /develop → /qa-test → /code-review   (사람)
 ⑦ greenzone.cjs build/export   ← 기능명세서 반환
+⑧ greenzone-return.cjs         ← 그 요청의 회신 (feedback/… 브랜치)
 ```
 
-기계가 하는 것은 ②③④⑦, 사람이 하는 것은 ⑤⑥ 이다.
+기계가 하는 것은 ②③④⑦⑧, 사람이 하는 것은 ⑤⑥ 과 ⑧ 의 판정 칸이다.
 
 ---
 
@@ -170,7 +171,7 @@ DR-009 는 `dev-request.md` §6 에 **확인 필요 4건**이 있다 — 전달 
 
 ---
 
-## ⑦ 그린존 반환
+## ⑦ 그린존 반환 — 기능명세서
 
 개발 계획서와 TRD 에서 **기능명세서**를 유도해 저장소 레포로 돌려보낸다.
 
@@ -197,6 +198,53 @@ node scripts/greenzone.cjs export --root ../../ --dest ../adp-repository/greenzo
 
 ---
 
+## ⑧ 개발요청서(DR) 회신 — ⑦ 과 다른 산출물이다
+
+⑦ 은 우리가 만든 것을 열람 구역에 내는 것이고, 이것은 **Builder 가 보낸 요청마다 정해진
+자리에 정해진 파일을 돌려주는 것**이다. 규격이 요청마다 달라 손으로 짜지 않는다.
+
+```bash
+node scripts/greenzone-return.cjs plan --dr BP-D900001 --root ../../
+```
+
+```
+  BP-D900001 회신 규격 (specVersion 3 · 정본 BP-D900001/manifest.json expectedBack)
+
+    돌려보낼 브랜치   feedback/BP-D900001
+    갈라 올 기준      cc0c45dab08ea18c73d023bd0307b1ba9052a5c0
+    TC 원본           BP-D900001/test-cases.md (3칸 — 의존·조건·행위는 —)
+
+    화면 EXW-TEST-10-S (EXW)
+      pages → core/EXW/pages/EXW-TEST-10-S.html
+      ...
+    통합테스트 TC-001 TC-002
+```
+
+```bash
+git -C target/adp-repository switch -c feedback/BP-D900001 cc0c45d…
+node scripts/greenzone-return.cjs scaffold --dr BP-D900001 --root ../../
+# ... 화면을 고치고 판정 칸을 채운 뒤
+node scripts/greenzone-return.cjs check --dr BP-D900001 --root ../../
+```
+
+`check` 는 **Builder 가 거절할 사유를 올리기 전에 로컬에서 재현**한다. 실제로 돌려 본 것:
+
+```
+  FAIL  EXW-TEST-10-S.pages 를 unchanged 로 적었으나 core/EXW/pages/EXW-TEST-10-S.html 가 바뀌어 있다
+  FAIL  BP-D900001/return/integration-tests.md TC-001 판정 칸이 비었다
+  FAIL  BP-D900001/return/integration-tests.md 에 보낸 적 없는 TC-999 이 있다 — 통째로 거절된다
+  FAIL  갈라 온 뒤 origin/main 에서 core/EXW/pages/EXW-UWV-70-30-10-C.html 가 바뀌었다
+```
+
+- **규격 정본은 `{DR}/manifest.json` 의 `expectedBack`** 이다. v3 부터 `expected-back.md` 는
+  "Developer 는 이 파일을 받지 않는다(스펙 4-4)" 한 줄짜리 껍데기다.
+- **브랜치 이름을 짐작하지 않는다** — v2 `feedback/{시스템}/{DR}` · v3 `feedback/{DR}`.
+- `changed`/`unchanged` 는 **base 대비 실제 차이로 유도**한다. 반대로 **판정 칸은 대신 채우지
+  않는다** — 하네스 TC 번호와 Builder TC 번호는 공간이 달라 이을 근거가 없다.
+- `check` 도 push 하지 않는다. 올리기는 사람이 한다.
+
+---
+
 ## 이 시뮬레이션이 찾아낸 것
 
 문서를 쓰려고 실제로 돌리다 **구멍 하나를 찾았다.**
@@ -219,7 +267,8 @@ node scripts/greenzone.cjs export --root ../../ --dest ../adp-repository/greenzo
 | 채번·연결 | `node scripts/intake.cjs --request … --entry=… --yes` | 기계(단계는 사람이 고름) |
 | TRD 생성 | `/dev-interview` → `/dev-plan` | **사람** |
 | 구현·검증 | `/develop` → `/qa-test` → `/code-review` | **사람** |
-| 반환 | `node scripts/greenzone.cjs build` → `export` | 기계 |
+| 반환(기능명세서) | `node scripts/greenzone.cjs build` → `export` | 기계 |
+| 반환(DR 회신) | `greenzone-return.cjs` `plan` → `scaffold` → `check` | 기계(판정 칸은 **사람**) |
 
 **아직 안 되는 것** — `docs/HANDOVER.md` §8. 특히 TRD 진행률이 과업 상태에서 유도한
 값이라 한 과업의 TRD 가 전부 같은 상태로 보인다.

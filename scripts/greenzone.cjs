@@ -423,4 +423,4 @@ function main() {
 
 if (require.main === module) main();
 
-module.exports = { buildSpec, specMarkdown, requirements, readTrds, section, metaTable, scrub };
+module.exports = { buildSpec, specMarkdown, requirements, readTrds, section, metaTable, scrub, resolveRoot };

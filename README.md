@@ -17,6 +17,7 @@ WE-ADP 4단위시스템 중 **Developer** 의 비플페이 구현이다. 작업�
 | `scripts/serve.cjs` | 화면을 로컬에서 띄우는 정적 서버. `file://` 로는 안 열린다 |
 | `scripts/intake.cjs` | 요청서 → 채번·연결·원장재생성 한 번에 (기본 미리보기) |
 | `scripts/greenzone.cjs` | 계획서·TRD → **기능명세서**(그린존 산출물) 유도 |
+| `scripts/greenzone-return.cjs` | 개발요청서(DR) **회신** — 규격대로 깔고 올리기 전에 검사 |
 | `scripts/selftest.cjs` | 회귀 테스트. `node scripts/selftest.cjs` (CI 에서도 돈다) |
 | `web/developer.html` | 화면 1장(의존성 없음). 같은 폴더의 `ledger.json` 을 읽는다 |
 | `web/ledger.json` | 화면이 읽는 데이터. **레포에 담지 않는다 — 각자 자기 하네스로 만든다** |
@@ -72,7 +73,31 @@ node scripts/serve.cjs                                           # 브라우저�
   산출물은 **이 레포에도 담고**(`greenzone/`) 저장소 레포로도 내보낸다(사용자 확정 2026-09-22).
   기능명세서는 계획서 원문이라 소스 경로·줄번호·DB 컬럼·운영 수치가 실린다 — 과업 제목만
   담는 원장보다 노출 규모가 크다는 것을 알고 내린 결정이다.
-- 반환 **전송 방향은 아직 미합의**다. `export` 는 발행 게이트를 지나 복사까지만 하고 push 는 사람이 한다.
+- **개발요청서(DR) 회신** — 위 기능명세서와 **다른 산출물**이다. 저쪽은 우리가 만든 것을 열람
+  구역에 내는 것이고, 이쪽은 Builder 가 보낸 요청마다 **정해진 자리에 정해진 파일을 돌려주는**
+  것이다. 규격이 요청마다 달라서 `scripts/greenzone-return.cjs` 가 읽어 깐다.
+
+  ```bash
+  node scripts/greenzone-return.cjs plan     --dr BP-D900001 --root ../../   # 규격을 읽어 보여준다
+  git -C target/adp-repository switch -c feedback/BP-D900001 {plan 이 찍어 준 base}
+  node scripts/greenzone-return.cjs scaffold --dr BP-D900001 --root ../../   # 회신서·시험결과 표
+  # ... 화면을 고치고 판정 칸을 채운 뒤
+  node scripts/greenzone-return.cjs check    --dr BP-D900001 --root ../../   # 올리기 전 게이트
+  ```
+
+  **규격 정본은 `{DR}/manifest.json` 의 `expectedBack` 이다** — `expected-back.md` 가 아니다.
+  v3 부터 그 md 는 "Developer 는 이 파일을 받지 않는다(스펙 4-4)" 한 줄짜리로 바뀌었고,
+  `expectedBack` 블록은 v2·v3 에 똑같이 실려 온다(실측 2026-09-26).
+  **반환 브랜치 이름을 짐작하지 않는다** — v2 는 `feedback/{시스템}/{DR}`, v3 는 `feedback/{DR}` 로
+  시스템 마디가 빠졌다. manifest 가 준 문자열을 그대로 쓴다.
+  `check` 는 Builder 가 거절하는 사유 9종을 **올리기 전에 로컬에서** 재현한다 — 기준 커밋이
+  기본 브랜치 이력에 없음 · 화면 집합 불일치 · 모르는 상태값 · 보낸 적 없는 TC · 9칸 아님 ·
+  판정 공란·허용 어휘 위반 · 갈라 온 뒤 기본 브랜치가 그 파일을 고침.
+- 회신의 `changed`/`unchanged` 는 **사람이 적지 않는다** — base 대비 실제 파일 차이로 유도한다.
+  적은 것과 낸 것이 어긋날 자리를 없앤다. 반대로 **판정 칸은 대신 채우지 않는다** — 하네스 TC
+  번호(`TC-{과업번호}-017`)와 Builder TC 번호(`TC-001`)는 번호 공간이 다르고 둘을 잇는 근거가
+  없다. 없는 매핑을 지어내는 대신 빈칸으로 내고 `check` 가 막는다.
+- 반환 **전송 방향은 아직 미합의**다. `export`·`check` 모두 push 하지 않는다 — 올리기는 사람이 한다.
 - DB 없이 스캔만으로 돈다. 로컬 실행 전제다.
 
 > `scripts/adapters/` 는 **신뢰 경계**다 — 여기 놓인 `.cjs` 는 `require` 로 실행된다.
