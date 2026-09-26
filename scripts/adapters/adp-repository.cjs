@@ -96,9 +96,36 @@ function load(ctx) {
   return { requests, warns };
 }
 
-/** 전송 꾸러미가 올라오는 브랜치 접두. 실측 — `dr/DR-009` (2026-09-22 첫 수신). */
+/**
+ * 전송 꾸러미가 올라오는 브랜치 접두.
+ *
+ * 규약이 한 번 바뀌었다 — `dr/DR-009`(첫 수신) → **`dr/{시스템}/{DR}`**(`dr/EXW/DR-015`).
+ * 접두 매칭이라 두 형태를 다 잡는다. DR 번호는 **브랜치의 마지막 마디**다.
+ */
 const DR_REF_PREFIX = 'refs/remotes/origin/dr';
-const SPEC_VERSION = 2;
+
+/** 아는 꾸러미 규격. 모르는 버전은 조용히 통과시키지 않고 건너뛰며 사유를 남긴다. */
+const SPEC_VERSIONS = [2, 3];
+
+/**
+ * 전달 원장. Builder 가 `dev-requests` 브랜치에 쓰는 **정본 인덱스**다.
+ * 줄 하나가 개발요청서 하나이며, 같은 `dr` 을 다시 보내면 그 줄이 새것으로 바뀐다.
+ * v3 부터 `type`·`status`·`revision`·`groupCode` 가 여기 실린다.
+ */
+const DELIVERIES_REF = 'origin/dev-requests';
+const DELIVERIES_FILE = 'deliveries.json';
+
+/**
+ * 전달 원장의 상태 → 원장 4택.
+ *
+ * 표준 4택(요청·접수·진행·완료)은 WE-ADP 정본이라 임의로 늘리지 않는다.
+ * `withdrawn`(철회)은 4택에 자리가 없어 **수신함에서 뺀다** — 다만 조용히 빼지 않고
+ * 경고로 남긴다. 없던 일이 된 요청을 "요청"으로 보이면 그게 더 큰 거짓이다.
+ */
+const DELIVERY_STATUS = {
+  sent: '요청',
+  withdrawn: null,
+};
 
 function git(dir, args) {
   return execFileSync('git', args, {
@@ -130,18 +157,45 @@ function showFile(dir, ref, file) {
 }
 
 /**
+ * 전달 원장을 읽는다. 없으면 빈 색인 — 구버전 저장소에서도 브랜치 훑기로 돈다.
+ * @returns {{byDr: Object, found: boolean}}
+ */
+function readDeliveries(dir, warns) {
+  const raw = showFile(dir, DELIVERIES_REF, DELIVERIES_FILE);
+  if (!raw) return { byDr: {}, found: false };
+  let j;
+  try { j = JSON.parse(raw); } catch (e) {
+    warns.push('adp-repository: deliveries.json 파싱 실패 — 브랜치 훑기로만 읽는다');
+    return { byDr: {}, found: false };
+  }
+  const byDr = {};
+  for (const d of (Array.isArray(j.deliveries) ? j.deliveries : [])) {
+    if (d && d.dr) byDr[String(d.dr)] = d;
+  }
+  return { byDr, found: true };
+}
+
+/**
  * 요청 상태.
  *
- * 브랜치만 있으면 `요청`, `main` 에 머지됐으면 `완료` (사용자 확정 2026-09-22 · 잠정).
- * manifest 에 상태 필드가 없어 머지 여부로 **유도**한 값이다 — Builder 가 상태를 실어
- * 보내기 시작하면 그것을 쓴다. 가운데 두 상태(접수·진행)는 유도할 근거가 없어 쓰지 않는다.
+ * 전달 원장에 `status` 가 있으면 **그 값이 정본**이다(v3~). 없으면 예전처럼 머지 여부로
+ * 유도한다 — 브랜치만 있으면 `요청`, `main` 머지면 `완료`.
+ *
+ * @returns {{value: string|null, via: string}} value 가 null 이면 수신함에서 뺀다.
  */
-function statusOf(dir, ref) {
+function statusOf(dir, ref, delivery) {
+  const raw = delivery && delivery.status;
+  if (raw) {
+    if (Object.prototype.hasOwnProperty.call(DELIVERY_STATUS, raw)) {
+      return { value: DELIVERY_STATUS[raw], via: '전달 원장 status=' + raw };
+    }
+    return { value: null, via: '전달 원장에 모르는 status=' + raw };
+  }
   try {
     git(dir, ['merge-base', '--is-ancestor', ref, 'origin/main']);
-    return '완료';
+    return { value: '완료', via: 'main 머지 (유도)' };
   } catch (e) {
-    return '요청';
+    return { value: '요청', via: '브랜치만 존재 (유도)' };
   }
 }
 
@@ -176,12 +230,30 @@ function titleOf(md, manifest) {
  * **버리지 않고** 경고로 남긴다 — 조용히 사라지면 "안 온 것"과 구별되지 않는다.
  */
 function parseRequests(dir, _manifest, warns) {
+  const { byDr, found } = readDeliveries(dir, warns);
   const refs = drRefs(dir, warns);
-  if (!refs.length) return [];
+
+  // 전달 원장과 브랜치를 **합친다**. 원장이 정본이지만, 원장에서 내려간 뒤에도 브랜치가
+  // 남은 요청(진행 중이라 이미 채번한 것)을 놓치면 수신함에서 조용히 사라진다.
+  const byLabel = {};
+  for (const ref of refs) {
+    byLabel[ref.split('/').pop()] = ref;          // origin/dr/EXW/DR-015 → DR-015
+  }
+  for (const dr of Object.keys(byDr)) {
+    if (byLabel[dr]) continue;
+    const b = byDr[dr].branch;                    // 원장에만 있고 아직 fetch 안 된 것
+    if (b) warns.push(`adp-repository: ${dr} 은 전달 원장에 있으나 브랜치 ${b} 를 못 찾았다 — git fetch 필요`);
+  }
+  const labels = Object.keys(byLabel).sort();
+  if (!labels.length) {
+    if (found) warns.push('adp-repository: 전달 원장은 읽었으나 dr/* 브랜치가 하나도 없다 — git fetch 필요');
+    return [];
+  }
 
   const out = [];
-  for (const ref of refs) {
-    const label = ref.split('/').pop();            // origin/dr/DR-009 → DR-009
+  for (const label of labels) {
+    const ref = byLabel[label];
+    const delivery = byDr[label] || null;
     const mf = showFile(dir, ref, label + '/manifest.json');
     if (!mf) { warns.push(`adp-repository: ${label} 에 manifest.json 이 없다 — 건너뜀`); continue; }
 
@@ -190,8 +262,8 @@ function parseRequests(dir, _manifest, warns) {
       warns.push(`adp-repository: ${label} manifest.json 파싱 실패 — 건너뜀`);
       continue;
     }
-    if (m.specVersion !== SPEC_VERSION) {
-      warns.push(`adp-repository: ${label} specVersion=${m.specVersion} (아는 것은 ${SPEC_VERSION}) — 건너뜀`);
+    if (SPEC_VERSIONS.indexOf(m.specVersion) < 0) {
+      warns.push(`adp-repository: ${label} specVersion=${m.specVersion} (아는 것은 ${SPEC_VERSIONS.join('·')}) — 건너뜀`);
       continue;
     }
 
@@ -199,7 +271,15 @@ function parseRequests(dir, _manifest, warns) {
     const screens = Array.isArray(m.screens) ? m.screens : [];
     const md = showFile(dir, ref, label + '/dev-request.md');
 
-    // 시스템이 여러 그룹에 걸치면 그룹마다 한 건으로 낸다 — 본체가 그룹으로 거르기 때문이다.
+    // ① 상태를 먼저 본다. 철회된 것을 그룹 매핑까지 끌고 가면 엉뚱한 경고가 붙는다.
+    const st = statusOf(dir, ref, delivery);
+    if (!st.value) {
+      warns.push(`adp-repository: ${label} 수신함에서 뺀다 — ${st.via}`);
+      continue;
+    }
+    const status = st.value;
+
+    // ② 그룹. 시스템이 여러 그룹에 걸치면 그룹마다 한 건으로 낸다 — 본체가 그룹으로 거른다.
     const byGroup = {};
     for (const s of screens) {
       const g = systemToGroup(s.systemCode);
@@ -209,17 +289,25 @@ function parseRequests(dir, _manifest, warns) {
       }
       (byGroup[g] = byGroup[g] || []).push(s);
     }
-    if (!Object.keys(byGroup).length) continue;
+    if (!Object.keys(byGroup).length) {
+      // 조용히 버리지 않는다. 화면이 없는 요청(규약상 `dr/SRT/*`)은 그룹을 정할 근거가
+      // 아예 없고, 화면은 있는데 매핑이 없으면 위에서 이미 사유를 남겼다.
+      warns.push(screens.length
+        ? `adp-repository: ${label} 은 그룹으로 옮길 화면이 하나도 없다 — 수신함에 안 보인다`
+        : `adp-repository: ${label} 에 화면이 없어(screens 0건) 그룹을 정할 수 없다 — 수신함에 안 보인다`);
+      continue;
+    }
 
-    const type = typeOf(md);
+    // ③ 원천 유형 — 전달 원장이 실어 보내면 그것이 정본(v3~), 없으면 본문 머리표에서 읽는다.
+    const type = (delivery && delivery.type) || typeOf(md);
     if (!type) warns.push(`adp-repository: ${label} 의 원천 유형(FRD/SRT)을 읽지 못했다`);
 
-    let receivedAt = '';
-    try {
-      receivedAt = git(dir, ['log', '-1', '--format=%cI', ref]).trim();
-    } catch (e) { /* 비면 화면이 '-' 로 낸다 */ }
+    // 보낸 시각도 원장이 정본이다. 브랜치 커밋일은 다시 보내면 어긋날 수 있다.
+    let receivedAt = (delivery && delivery.sentAt) || '';
+    if (!receivedAt) {
+      try { receivedAt = git(dir, ['log', '-1', '--format=%cI', ref]).trim(); } catch (e) { /* 비면 화면이 '-' */ }
+    }
 
-    const status = statusOf(dir, ref);
     const title = titleOf(md, m);
 
     for (const g of Object.keys(byGroup)) {
